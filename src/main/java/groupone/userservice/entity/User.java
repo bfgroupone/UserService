@@ -25,7 +25,7 @@ public class User {
     private Integer id;
 
     @Column(nullable = false, unique = true)
-    private String username;
+    private String email;
 
     @Column(nullable = false)
     private String firstName;
@@ -33,8 +33,6 @@ public class User {
     @Column(nullable = false)
     private String lastName;
 
-    @Column(nullable = false)
-    private String email;
 
     @Column(nullable = false)
     private String password;
