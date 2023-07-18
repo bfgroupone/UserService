@@ -13,6 +13,7 @@ public class AuthUserDetail implements UserDetails {
 //    private int id;
     private String email;
     private String password;
+    private int userId;
     private boolean accountNonExpired;
     private boolean accountNonLocked;
     private boolean credentialsNonExpired;
@@ -32,6 +33,9 @@ public class AuthUserDetail implements UserDetails {
 
     public String getEmail() {
         return this.email;
+    }
+    public int getUserId() {
+        return this.userId;
     }
 
     @Override

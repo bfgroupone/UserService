@@ -1,4 +1,5 @@
 package groupone.userservice.security;
+import groupone.userservice.entity.User;
 import groupone.userservice.exception.NoTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -8,6 +9,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,22 +29,14 @@ public class JwtProvider {
 
 
     // create jwt from a UserDetail
-    public String createToken(UserDetails userDetails){
-        //Claims is essentially a key-value pair, where the key is a string and the value is an object
-        Claims claims = Jwts.claims().setSubject(userDetails.getUsername()); // user identifier
-//        System.out.println("createToken using");
-//        System.out.println(userDetails.toString());
-//        claims.put("permissions", userDetails.getAuthorities()); // user permission
-        System.out.println(Jwts.builder()
+    public String createToken(AuthUserDetail userDetails){
+        Claims claims = Jwts.claims().setSubject(userDetails.getUsername());
+        claims.put("permissions", userDetails.getAuthorities());
+        claims.put("userId", userDetails.getUserId());
+        return Jwts.builder()
                 .setClaims(claims)
-                .signWith(SignatureAlgorithm.HS256, key) // algorithm and key to sign the token
-                .compact());
-        this.token = Jwts.builder()
-                .setClaims(claims)
-                .signWith(SignatureAlgorithm.HS256, key) // algorithm and key to sign the token
+                .signWith(SignatureAlgorithm.HS256, key)
                 .compact();
-
-        return token;
     }
 
     // resolves the token -> use the information in the token to create a userDetail object
@@ -59,7 +53,7 @@ public class JwtProvider {
         System.out.printf("claims %s\n",claims.toString());
 
 //        String username = claims.getSubject();
-        String username = (String)claims.get("sub");
+        String username = (String)claims.get("username");
 
         System.out.printf("token username %s\n",username);
 

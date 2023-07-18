@@ -1,8 +1,11 @@
 package groupone.userservice.service;
 import groupone.userservice.dao.UserDao;
+import groupone.userservice.dto.response.AllHistoryResponse;
+import groupone.userservice.entity.History;
 import groupone.userservice.entity.User;
 
 
+import groupone.userservice.exception.UserException;
 import groupone.userservice.security.AuthUserDetail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -22,16 +25,26 @@ import java.util.stream.Collectors;
 @Service
 public class UserService implements UserDetailsService {
     private UserDao userDao;
-
+    private RemoteHistoryService remoteHistoryService;
     @Autowired
     public void setUserDao(UserDao userDao) {
         this.userDao = userDao;
     }
+    @Autowired
+    public void setRemoteHistoryService(RemoteHistoryService remoteHistoryService) {this.remoteHistoryService = remoteHistoryService;}
+
+
 
     @Transactional
     public List<User> getAllUsers() {
         List<User> users = userDao.getAllUsers();
         return users;
+    }
+    @Transactional
+    public void createUser(User... users) {
+        for (User u : users) {
+            userDao.addUser(u);
+        }
     }
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -52,4 +65,11 @@ public class UserService implements UserDetailsService {
                 .enabled(true)
                 .build();
     }
+
+    @Transactional
+    public List<History> getHistoryByUid(Integer uid) {
+        return remoteHistoryService.getAllHistory().getHistorylist()
+                .stream().filter(history -> history.getUserId().equals(uid)).collect(Collectors.toList());
+    }
+
 }
