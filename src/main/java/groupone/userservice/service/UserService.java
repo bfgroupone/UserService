@@ -1,6 +1,7 @@
 package groupone.userservice.service;
 
 import groupone.userservice.dao.UserDao;
+import groupone.userservice.dto.response.DataResponse;
 import groupone.userservice.entity.History;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
@@ -21,7 +22,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -105,9 +105,10 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public List<History> getHistoryByUid(Integer uid) {
-        return remoteHistoryService.getAllHistory().getHistorylist()
-                .stream().filter(history -> history.getUserId().equals(uid)).collect(Collectors.toList());
+    public List<History> getHistory() {
+        DataResponse response = remoteHistoryService.getAllHistory().getBody();
+        List<History> histories = (List<History>) response.getData();
+        return histories;
     }
 
     @Transactional

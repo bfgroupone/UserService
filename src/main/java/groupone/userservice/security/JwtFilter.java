@@ -34,13 +34,14 @@ public class JwtFilter extends OncePerRequestFilter {
 
             Optional<AuthUserDetail> authUserDetailOptional;
             try{
+                String token = jwtProvider.extractToken(request);
                 authUserDetailOptional = jwtProvider.resolveToken(request); // extract jwt from request, generate a userdetails object
                 if (authUserDetailOptional.isPresent()){
 
                     AuthUserDetail authUserDetail = authUserDetailOptional.get();
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             authUserDetail.getUsername(),
-                            null,
+                            token,
                             authUserDetail.getAuthorities()
                     ); // generate authentication object
 
