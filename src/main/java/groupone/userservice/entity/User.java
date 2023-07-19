@@ -36,16 +36,16 @@ public class User {
 
     @Column(nullable = false)
     private String password;
-
-    @Column(nullable = false)
-    @JsonProperty
-    private boolean active;
+//
+//    @Column(nullable = false)
+//    @JsonProperty
+//    private boolean active;
 
     @Column(nullable = false)
     private Date dateJoined;
 
     @Column(nullable = false)
-    private String type;
+    private int type;
 
     @Column
     private String profileImageURL;

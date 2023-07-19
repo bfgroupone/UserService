@@ -12,9 +12,9 @@ public class UserDao extends AbstractHibernateDao<User> {
         setClazz(User.class);
     }
 
-    public void setUserActive(User user, boolean isActive) {
-        user.setActive(isActive);
-    }
+//    public void setUserActive(User user, boolean isActive) {
+//        user.setActive(isActive);
+//    }
 
     public Optional<User> loadUserByEmail(String email){
         return this.getAll().stream().filter(user -> user.getEmail().equals(email)).findAny();

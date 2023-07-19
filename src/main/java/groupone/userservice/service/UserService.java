@@ -71,5 +71,11 @@ public class UserService implements UserDetailsService {
         return remoteHistoryService.getAllHistory().getHistorylist()
                 .stream().filter(history -> history.getUserId().equals(uid)).collect(Collectors.toList());
     }
+    @Transactional
+    public void addUser(String firstName, String lastName, String email, String password, String profileImageUrl){
+        int id = userDao.getAllUsers().size()+1;
+        User user = new User(id, email, firstName, lastName, password,new Date(),2,profileImageUrl);
+        userDao.addUser(user);
+    }
 
 }

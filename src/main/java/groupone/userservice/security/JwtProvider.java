@@ -33,6 +33,7 @@ public class JwtProvider {
         Claims claims = Jwts.claims().setSubject(userDetails.getUsername());
         claims.put("permissions", userDetails.getAuthorities());
         claims.put("userId", userDetails.getUserId());
+        claims.put("email", userDetails.getEmail());
         return Jwts.builder()
                 .setClaims(claims)
                 .signWith(SignatureAlgorithm.HS256, key)
@@ -53,9 +54,9 @@ public class JwtProvider {
         System.out.printf("claims %s\n",claims.toString());
 
 //        String username = claims.getSubject();
-        String username = (String)claims.get("username");
+        String email = (String)claims.get("email");
 
-        System.out.printf("token username %s\n",username);
+        System.out.printf("token email %s\n",email);
 
         List<LinkedHashMap<String, String>> permissions = (List<LinkedHashMap<String, String>>) claims.get("permissions");
 
@@ -66,7 +67,7 @@ public class JwtProvider {
 
         //return a userDetail object with the permissions the user has
         return Optional.of(AuthUserDetail.builder()
-                .email(username)
+                .email(email)
                 .authorities(authorities)
                 .build());
 
