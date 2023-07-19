@@ -77,4 +77,16 @@ public class JwtProvider {
                 .build());
 
     }
+
+    public String extractToken(HttpServletRequest request) throws NoTokenException {
+
+        String header = request.getHeader("Authorization");
+        if(header == null) {
+            throw new NoTokenException("No token founded, please login first.");
+        }
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7); // Extract the token without the "Bearer " prefix
+        }
+        return null; // Token not found in the request header
+    }
 }

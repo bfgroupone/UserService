@@ -23,6 +23,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.Date;
 import java.util.List;
@@ -58,10 +59,10 @@ public class UserController {
         return ResponseEntity.ok(res);
     }
 
-    @GetMapping("/history/{id}")
-    public ResponseEntity<AllHistoryResponse> getHistoryByUid(@PathVariable int id){
-        List<History> data =  userService.getHistoryByUid(id);
-        for(History h: data) System.out.println(h.getId());
+    @GetMapping("/history")
+    public ResponseEntity<AllHistoryResponse> getHistory(HttpServletRequest request){
+        List<History> data =  userService.getHistory(request);
+//        for(History h: data) System.out.println(h.getId());
         AllHistoryResponse res = AllHistoryResponse.builder()
                 .historylist(data)
                 .build();

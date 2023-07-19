@@ -1,6 +1,7 @@
 package groupone.userservice.service;
 
 import groupone.userservice.dao.UserDao;
+import groupone.userservice.dto.response.DataResponse;
 import groupone.userservice.entity.History;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
@@ -15,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -105,9 +107,10 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public List<History> getHistoryByUid(Integer uid) {
-        return remoteHistoryService.getAllHistory().getHistorylist()
-                .stream().filter(history -> history.getUserId().equals(uid)).collect(Collectors.toList());
+    public List<History> getHistory(HttpServletRequest request) {
+        DataResponse response = remoteHistoryService.getAllHistory().getBody();
+        List<History> histories = (List<History>) response.getData();
+        return histories;
     }
 
     @Transactional
