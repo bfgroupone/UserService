@@ -2,13 +2,10 @@ package groupone.userservice.controller;
 
 import groupone.userservice.dto.request.LoginRequest;
 import groupone.userservice.dto.request.RegisterRequest;
-import groupone.userservice.dto.request.UserCreationRequest;
-import groupone.userservice.dto.response.AllHistoryResponse;
 import groupone.userservice.dto.response.DataResponse;
 import groupone.userservice.entity.History;
 import groupone.userservice.entity.User;
 import groupone.userservice.security.AuthUserDetail;
-import groupone.userservice.security.JwtFilter;
 import groupone.userservice.security.JwtProvider;
 import groupone.userservice.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +17,10 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping()
