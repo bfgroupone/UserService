@@ -93,9 +93,8 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request,
-                                                 BindingResult bindingResult) throws DataIntegrityViolationException {
-        if (bindingResult.hasErrors()) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request ) throws DataIntegrityViolationException {
+//        if (bindingResult.hasErrors()) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
         userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view");
 

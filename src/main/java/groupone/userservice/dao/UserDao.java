@@ -1,6 +1,9 @@
 package groupone.userservice.dao;
 
 import groupone.userservice.entity.User;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -28,7 +31,15 @@ public class UserDao extends AbstractHibernateDao<User> {
         return this.getAll();
     }
 
-    public void addUser(User user) {
+    public void addUser(User user) throws DataIntegrityViolationException {
+//        try (Session session = this.getCurrentSession()) {
+//            Transaction tx;
+//            tx = session.beginTransaction();
+//            session.save(user);
+//            tx.commit();
+//        } catch (Exception e) {
+//            throw new DataIntegrityViolationException(e.getMessage() + " " + e.getCause().getLocalizedMessage());
+//        }
         this.add(user);
     }
 
