@@ -60,8 +60,8 @@ public class UserController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<AllHistoryResponse> getHistory(HttpServletRequest request){
-        List<History> data =  userService.getHistory(request);
+    public ResponseEntity<AllHistoryResponse> getHistory(){
+        List<History> data =  userService.getHistory();
 //        for(History h: data) System.out.println(h.getId());
         AllHistoryResponse res = AllHistoryResponse.builder()
                 .historylist(data)

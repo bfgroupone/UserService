@@ -107,7 +107,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public List<History> getHistory(HttpServletRequest request) {
+    public List<History> getHistory() {
         DataResponse response = remoteHistoryService.getAllHistory().getBody();
         List<History> histories = (List<History>) response.getData();
         return histories;
