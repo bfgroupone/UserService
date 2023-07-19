@@ -93,7 +93,7 @@ public class UserService implements UserDetailsService {
             userAuthorities.add(new SimpleGrantedAuthority("recover"));
         } else if (user.getType() == UserType.NORMAL_USER.ordinal()) {
             userAuthorities.add(new SimpleGrantedAuthority("read"));
-            userAuthorities.add(new SimpleGrantedAuthority("admin_read"));
+            userAuthorities.add(new SimpleGrantedAuthority("write"));
             userAuthorities.add(new SimpleGrantedAuthority("delete"));
             userAuthorities.add(new SimpleGrantedAuthority("update"));
         } else if (user.getType() == UserType.NORMAL_USER_NOT_VALID.ordinal()) {
