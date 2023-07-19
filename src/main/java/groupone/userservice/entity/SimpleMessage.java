@@ -15,4 +15,13 @@ public class SimpleMessage implements Serializable {
     private String recipient;
     private String msgBody;
     private String subject;
+
+//    @Override
+//    public String toString() {
+//        return "SimpleMessage{" +
+//                "recipient='" + recipient + '\'' +
+//                ", msgBody='" + msgBody + '\'' +
+//                ", subject='" + subject + '\'' +
+//                '}';
+//    }
 }
