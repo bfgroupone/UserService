@@ -4,7 +4,6 @@ import groupone.userservice.dto.request.LoginRequest;
 import groupone.userservice.dto.request.RegisterRequest;
 import groupone.userservice.dto.request.UserRegistrationRequest;
 import groupone.userservice.dto.response.DataResponse;
-import groupone.userservice.entity.History;
 import groupone.userservice.entity.User;
 import groupone.userservice.security.AuthUserDetail;
 import groupone.userservice.security.JwtProvider;
@@ -20,6 +19,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -54,17 +54,6 @@ public class UserController {
         return ResponseEntity.ok(res);
     }
 
-    @GetMapping("/history")
-    public ResponseEntity<DataResponse> getHistory() {
-        List<History> data = userService.getHistory();
-//        for(History h: data) System.out.println(h.getId());
-        DataResponse res = DataResponse.builder()
-                .success(true)
-                .message("All history for current user: ")
-                .data(data)
-                .build();
-        return ResponseEntity.ok(res);
-    }
 
     @PostMapping("/login")
     public ResponseEntity<DataResponse> login(@RequestBody LoginRequest request) {
@@ -111,6 +100,41 @@ public class UserController {
                 DataResponse.builder()
                         .message("Registered, please log in with your new account")
                         .build(), HttpStatus.OK);
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<DataResponse> getUserById(@RequestParam("userId") Integer userId) {
+        User exist = userService.getUserById(userId);
+        if(exist == null){
+            DataResponse response = DataResponse.builder()
+                    .success(false)
+                    .message("User not found")
+                    .build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+        return ResponseEntity.ok(DataResponse.builder()
+                .success(true)
+                .message("Get user by id Success")
+                .data(exist)
+                .build());
+    }
+    @DeleteMapping("/user")
+    public ResponseEntity<DataResponse> deleteUesr(@RequestParam("userId") Integer userId){
+        User existingUser = userService.getUserById(userId);
+        if (existingUser == null){
+            DataResponse response = DataResponse.builder()
+                    .success(false)
+                    .message("User not found")
+                    .build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        userService.deleteUser(existingUser);
+        DataResponse response = DataResponse.builder()
+                .success(true)
+                .message("User deleted successfully")
+                .build();
+        return ResponseEntity.ok(response);
     }
 
 

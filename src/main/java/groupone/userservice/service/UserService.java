@@ -2,7 +2,6 @@ package groupone.userservice.service;
 
 import groupone.userservice.dao.UserDao;
 import groupone.userservice.dto.response.DataResponse;
-import groupone.userservice.entity.History;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
 import groupone.userservice.security.AuthUserDetail;
@@ -26,17 +25,13 @@ import java.util.Optional;
 @Service
 public class UserService implements UserDetailsService {
     private UserDao userDao;
-    private RemoteHistoryService remoteHistoryService;
 
     @Autowired
     public void setUserDao(UserDao userDao) {
         this.userDao = userDao;
     }
 
-    @Autowired
-    public void setRemoteHistoryService(RemoteHistoryService remoteHistoryService) {
-        this.remoteHistoryService = remoteHistoryService;
-    }
+
 
 
     @Transactional
@@ -104,12 +99,6 @@ public class UserService implements UserDetailsService {
         return userAuthorities;
     }
 
-    @Transactional
-    public List<History> getHistory() {
-        DataResponse response = remoteHistoryService.getAllHistory().getBody();
-        List<History> histories = (List<History>) response.getData();
-        return histories;
-    }
 
     @Transactional
     public void addUser(String firstName, String lastName, String email, String password, String profileImageUrl) {
@@ -127,5 +116,13 @@ public class UserService implements UserDetailsService {
         }
         userDao.addUser(user);
     }
+    @Transactional
+    public User getUserById(Integer userId) {
+        return userDao.getUserById(userId);
+    }
 
+    @Transactional
+    public void deleteUser(User user) {
+        userDao.deleteUser(user);
+    }
 }
