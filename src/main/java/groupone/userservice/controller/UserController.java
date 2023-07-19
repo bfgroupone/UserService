@@ -93,15 +93,9 @@ public class UserController {
     public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request) throws DataIntegrityViolationException {
 //        if (bindingResult.hasErrors()) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
-//        userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view");
-//
-//        SimpleMessage newMessage = SimpleMessage.builder()
-//                .recipient(request.getEmail())
-//                .subject("test")
-//                .msgBody("test")
-//                .build();
+        userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view");
 
-
+//        TODO: only if user is successfully added
         UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
                 .recipient(request.getEmail())
                 .subject("test")
@@ -110,8 +104,7 @@ public class UserController {
 
         String jsonMessage = SerializeUtil.serialize(registrationRequest);
 
-
-        rabbitTemplate.convertAndSend("", "q.user-registration", jsonMessage);
+        rabbitTemplate.convertAndSend("x.user-registration", "send-email", jsonMessage);
 
         return new ResponseEntity<>(
                 DataResponse.builder()
