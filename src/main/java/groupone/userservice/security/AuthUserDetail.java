@@ -10,16 +10,15 @@ import java.util.List;
 //The UserDetails interface contains all the fields that a user might have
 @Builder
 public class AuthUserDetail implements UserDetails {
-//    private int id;
     private String email;
     private String password;
     private int userId;
+    private String type;
     private boolean accountNonExpired;
     private boolean accountNonLocked;
     private boolean credentialsNonExpired;
     private boolean enabled;
     private List<GrantedAuthority> authorities;
-//    public int getId() {return this.id;}
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -31,16 +30,21 @@ public class AuthUserDetail implements UserDetails {
         return this.password;
     }
 
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
     public String getEmail() {
         return this.email;
     }
+
     public int getUserId() {
         return this.userId;
     }
 
-    @Override
-    public String getUsername() {
-        return this.email;
+    public String getUserType() {
+        return this.type;
     }
 
     @Override

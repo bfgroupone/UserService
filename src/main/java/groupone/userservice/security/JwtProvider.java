@@ -1,5 +1,5 @@
 package groupone.userservice.security;
-import groupone.userservice.entity.User;
+
 import groupone.userservice.exception.NoTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -8,13 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
-import java.nio.charset.Charset;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,11 +26,17 @@ public class JwtProvider {
 
 
     // create jwt from a UserDetail
-    public String createToken(AuthUserDetail userDetails){
+    public String createToken(AuthUserDetail userDetails) {
         Claims claims = Jwts.claims().setSubject(userDetails.getUsername());
-        claims.put("permissions", userDetails.getAuthorities());
+        List<String> authorities = new ArrayList<>();
+        for (GrantedAuthority c : userDetails.getAuthorities()) {
+            authorities.add(c.getAuthority());
+        }
+
+        claims.put("permissions", authorities);
         claims.put("userId", userDetails.getUserId());
         claims.put("email", userDetails.getEmail());
+        claims.put("role", userDetails.getUserType());
         return Jwts.builder()
                 .setClaims(claims)
                 .signWith(SignatureAlgorithm.HS256, key)
@@ -41,33 +44,35 @@ public class JwtProvider {
     }
 
     // resolves the token -> use the information in the token to create a userDetail object
-    public Optional<AuthUserDetail> resolveToken(HttpServletRequest request)throws NoTokenException {
+    public Optional<AuthUserDetail> resolveToken(HttpServletRequest request) throws NoTokenException {
         String prefixedToken = request.getHeader("Authorization"); // extract token value by key "Authorization"
-        if(prefixedToken == null) {
-            throw new NoTokenException("No token founded, please login first.");
+        System.out.printf("prefixedToken %s\n", prefixedToken);
+
+        if (prefixedToken != null && prefixedToken.startsWith("Bearer")) {
+            token = prefixedToken.substring(7); // remove the prefix "Bearer "
+        } else {
+            throw new NoTokenException("Invalid token, please login or check your token type");
         }
-        System.out.printf("prefixedToken %s\n",prefixedToken);
+
         String token = prefixedToken.substring(7); // remove the prefix "Bearer "
-        System.out.printf("token %s\n",token);
+        System.out.printf("token %s\n", token);
 
-        Claims claims = Jwts.parser().setSigningKey(key.getBytes(Charset.forName("UTF-8"))).parseClaimsJws(token.replace("{", "").replace("}","")).getBody();// decode
-        System.out.printf("claims %s\n",claims.toString());
+        Claims claims = Jwts.parser().setSigningKey(key).parseClaimsJws(token).getBody(); // decode
 
-//        String username = claims.getSubject();
-        String email = (String)claims.get("email");
+        List<GrantedAuthority> authorities = ((List<String>) claims.get("permissions")).stream()
+                .map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+        System.out.println(authorities);
 
-        System.out.printf("token email %s\n",email);
+        int userId = (int) claims.get("userId");
+        String email = (String) claims.get("email");
 
-        List<LinkedHashMap<String, String>> permissions = (List<LinkedHashMap<String, String>>) claims.get("permissions");
-
-        // convert the permission list to a list of GrantedAuthority
-        List<GrantedAuthority> authorities = permissions.stream()
-                .map(p -> new SimpleGrantedAuthority(p.get("authority")))
-                .collect(Collectors.toList());
+        System.out.printf("userId %s\n", userId);
+        System.out.printf("email %s\n", email);
 
         //return a userDetail object with the permissions the user has
         return Optional.of(AuthUserDetail.builder()
                 .email(email)
+                .userId(userId)
                 .authorities(authorities)
                 .build());
 

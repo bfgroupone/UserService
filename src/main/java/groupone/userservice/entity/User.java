@@ -1,14 +1,10 @@
 package groupone.userservice.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 @Entity
 @Table(name="User")
@@ -36,10 +32,6 @@ public class User {
 
     @Column(nullable = false)
     private String password;
-//
-//    @Column(nullable = false)
-//    @JsonProperty
-//    private boolean active;
 
     @Column(nullable = false)
     private Date dateJoined;
@@ -49,4 +41,12 @@ public class User {
 
     @Column
     private String profileImageURL;
+
+    public User(String firstName, String lastName, String email, String password) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.type = UserType.NORMAL_USER_NOT_VALID.ordinal();
+    }
 }
