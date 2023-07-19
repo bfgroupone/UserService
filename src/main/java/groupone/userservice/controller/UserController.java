@@ -53,11 +53,13 @@ public class UserController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<AllHistoryResponse> getHistory(){
+    public ResponseEntity<DataResponse> getHistory(){
         List<History> data =  userService.getHistory();
 //        for(History h: data) System.out.println(h.getId());
-        AllHistoryResponse res = AllHistoryResponse.builder()
-                .historylist(data)
+        DataResponse res = DataResponse.builder()
+                .success(true)
+                .message("All history for current user: ")
+                .data(data)
                 .build();
         return ResponseEntity.ok(res);
     }
