@@ -53,15 +53,15 @@ public class UserController {
         return ResponseEntity.ok(res);
     }
 
-    @GetMapping("/history")
-    public ResponseEntity<DataResponse> getHistory(){
-        List<History> data=  userService.getHistory();
-//        for(History h: data) System.out.println(h.getId());
-        DataResponse res = DataResponse.builder()
-                .data(data)
-                .build();
-        return ResponseEntity.ok(res);
-    }
+//    @GetMapping("/history")
+//    public ResponseEntity<DataResponse> getHistory(){
+//        List<History> data=  userService.getHistory();
+////        for(History h: data) System.out.println(h.getId());
+//        DataResponse res = DataResponse.builder()
+//                .data(data)
+//                .build();
+//        return ResponseEntity.ok(res);
+//    }
 
     @PostMapping("/login")
     public ResponseEntity<DataResponse> login(@RequestBody LoginRequest request) {
@@ -79,6 +79,7 @@ public class UserController {
         AuthUserDetail authUserDetail = (AuthUserDetail) authentication.getPrincipal();
 
         String token = jwtProvider.createToken(authUserDetail);
+        System.out.println("Bearer "+token);
 
         return new ResponseEntity<>(
                 DataResponse.builder()
@@ -110,14 +111,20 @@ public class UserController {
     }
 
     @PatchMapping("/users/{id}/{type}")
-    public ResponseEntity<DataResponse> modifiedUserType(@PathVariable int id, @PathVariable int type) throws InvalidTypeAuthorization {
-        User data = userService.updateUserType(id,type);
+    public ResponseEntity<DataResponse> modifiedUserType(@PathVariable int id, @PathVariable int type)  {
+        try {
+            User data = userService.updateUserType(id,type);
 
-        DataResponse res = DataResponse.builder()
-                .data(data)
-                .build();
-        return ResponseEntity.ok(res);
-
+            DataResponse res = DataResponse.builder()
+                    .data(data)
+                    .build();
+            return ResponseEntity.ok(res);
+        } catch(InvalidTypeAuthorization e) {
+            DataResponse res = DataResponse.builder()
+                    .data("Cannot assign SUPER ADMIN type.")
+                    .build();
+            return ResponseEntity.badRequest().body(res);
+        }
     }
 
 

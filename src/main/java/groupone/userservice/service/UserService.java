@@ -137,13 +137,16 @@ public class UserService implements UserDetailsService {
         if(!request.getProfileImageURL().isEmpty()) {
             user.setProfileImageURL(request.getProfileImageURL());
         }
-        if(!request.getEmail().isEmpty()) {
+        if(!request.getEmail().equals("")) {
             // sending verification code,
             // user type is invalid
-//            user.setEmail(request.getEmail());
-//            user.setType(3);
-            System.out.println("email empty");
+            user.setEmail(request.getEmail());
+            user.setType(3);
+//            System.out.println("email empty");
             // code to send email for validation
+        }
+        if(!request.getPassword().equals("")) {
+            user.setPassword(request.getPassword());
         }
         return user;
     }

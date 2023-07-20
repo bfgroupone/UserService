@@ -55,10 +55,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     //This method is used to configure the security of the application
     //Since we are attaching jwt to a request header manually, we don't need to worry about csrf
 
-//    @Override
-//    public void configure(WebSecurity web) throws Exception {
-//        web.ignoring().antMatchers("/user-service/users/*");
-//    }
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable().cors().and()
@@ -66,8 +62,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/user-service/login").permitAll()
                 .antMatchers("/user-service/register").permitAll()
-                .antMatchers("/user-service/users/*").permitAll()
-//                .antMatchers("/register").permitAll()
+//                .antMatchers("/user-service/users/*").permitAll()
+                .antMatchers("/user-service/users/*/1").hasAuthority("promote")
+                .antMatchers("/user-service/users/*/*").hasAuthority("ban_unban")
 //                .antMatchers(HttpMethod.GET,"/users").hasAuthority("user_read")
 //                .antMatchers(HttpMethod.PATCH,"/products/*").hasAuthority("product_update")
 //                .antMatchers(HttpMethod.POST,"/products").hasAuthority("product_update")
