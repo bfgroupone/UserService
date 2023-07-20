@@ -8,6 +8,7 @@ import groupone.userservice.security.AuthUserDetail;
 import groupone.userservice.security.JwtProvider;
 import groupone.userservice.service.UserService;
 import groupone.userservice.util.SerializeUtil;
+import org.apache.http.auth.InvalidCredentialsException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -63,7 +64,11 @@ public class UserController {
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
         } catch (AuthenticationException e) {
-            throw new BadCredentialsException("Incorrect credentials, please try again.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    DataResponse.builder()
+                            .success(false)
+                            .message("Incorrect credentials, please try again.")
+                            .build());
         }
 
         AuthUserDetail authUserDetail = (AuthUserDetail) authentication.getPrincipal();
@@ -73,6 +78,7 @@ public class UserController {
 
         return new ResponseEntity<>(
                 DataResponse.builder()
+                        .success(true)
                         .message("Welcome " + authUserDetail.getUsername())
                         .data(token)
                         .build(), HttpStatus.OK);
@@ -81,24 +87,33 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request) throws DataIntegrityViolationException {
 //        if (bindingResult.hasErrors()) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        try {
+            String token = userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view");
 
-        String token = userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view");
+            //        TODO: only if user is successfully added
+            UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
+                    .recipient(request.getEmail())
+                    .subject("Please click the link to validate your account")
+                    .msgBody("http://localhost:8082/user-service/validate?token=" + token)
+                    .build();
 
-        //        TODO: only if user is successfully added
-        UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
-                .recipient(request.getEmail())
-                .subject("Please click the link to validate your account")
-                .msgBody("http://localhost:8082/user-service/validate?token=" + token)
-                .build();
+            String jsonMessage = SerializeUtil.serialize(registrationRequest);
 
-        String jsonMessage = SerializeUtil.serialize(registrationRequest);
+            rabbitTemplate.convertAndSend("x.user-registration", "send-email", jsonMessage);
 
-        rabbitTemplate.convertAndSend("x.user-registration", "send-email", jsonMessage);
+            return new ResponseEntity<>(
+                    DataResponse.builder()
+                            .success(true)
+                            .message("Registered, please log in with your new account")
+                            .build(), HttpStatus.OK);
+        } catch (InvalidCredentialsException e){
+            DataResponse response = DataResponse.builder()
+                    .success(false)
+                    .message(e.getMessage())
+                    .build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
 
-        return new ResponseEntity<>(
-                DataResponse.builder()
-                        .message("Registered, please log in with your new account")
-                        .build(), HttpStatus.OK);
     }
 
     @PatchMapping("/users/{id}")
@@ -106,6 +121,7 @@ public class UserController {
         User data = userService.updateUserProfile(request, id);
 
         DataResponse res = DataResponse.builder()
+                .success(true)
                 .data(data)
                 .build();
         return ResponseEntity.ok(res);

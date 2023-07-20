@@ -10,6 +10,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.apache.http.auth.InvalidCredentialsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
@@ -106,9 +107,17 @@ public class UserService implements UserDetailsService {
         return userAuthorities;
     }
 
+    @Transactional
+    public boolean existsByEmail(String email){
+        return userDao.loadUserByEmail(email).isPresent();
+    }
 
     @Transactional
-    public String addUser(String firstName, String lastName, String email, String password, String profileImageUrl) {
+    public String addUser(String firstName, String lastName, String email, String password, String profileImageUrl) throws InvalidCredentialsException {
+        if (existsByEmail(email)) {
+            throw new InvalidCredentialsException("Email already exists.");
+        }
+
         User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
