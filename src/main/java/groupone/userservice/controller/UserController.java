@@ -113,5 +113,9 @@ public class UserController {
                         .build(), HttpStatus.OK);
     }
 
+    @GetMapping("/validate")
+    public ResponseEntity<DataResponse> createValidationEmailToken() {
+        userService.createValidationToken()
+    }
 
 }

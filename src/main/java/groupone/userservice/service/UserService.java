@@ -6,7 +6,12 @@ import groupone.userservice.entity.History;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
 import groupone.userservice.security.AuthUserDetail;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,6 +30,10 @@ import java.util.Optional;
 
 @Service
 public class UserService implements UserDetailsService {
+
+    @Value("${email.validation.token.key}")
+    private String validationEmailKey;
+
     private UserDao userDao;
     private RemoteHistoryService remoteHistoryService;
 
@@ -121,11 +130,38 @@ public class UserService implements UserDetailsService {
                 .dateJoined(new Date(Timestamp.valueOf(LocalDateTime.now()).getTime()))
                 .type(UserType.NORMAL_USER_NOT_VALID.ordinal())
                 .build();
-        
+
         if (profileImageUrl.length() != 0) {
             user.setProfileImageURL(profileImageUrl);
         }
         userDao.addUser(user);
     }
 
+    public String createValidationToken(int userId) {
+        // Calculate the expiration time (3 hours from now)
+        long expirationTimeMillis = System.currentTimeMillis() + 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+        Date expirationDate = new Date(expirationTimeMillis); // Build the JWT token
+        String token = Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .setExpiration(expirationDate)
+                .signWith(SignatureAlgorithm.HS256, validationEmailKey)
+                .compact();
+        return token;
+    }
+
+    public void isJwtTokenValid(String token) {
+        try {
+            // Parse the token using the secret key
+            Jws<Claims> claimsJws = Jwts.parser().setSigningKey(validationEmailKey).parseClaimsJws(token);
+
+
+            // Check if the token has expired
+//            Date expirationDate = claimsJws.getBody().getExpiration();
+//            Date currentDate = new Date();
+//            return !currentDate.after(expirationDate);
+
+        } catch (Exception e) {
+            // Token is invalid or has expired return false; }
+        }
+    }
 }
