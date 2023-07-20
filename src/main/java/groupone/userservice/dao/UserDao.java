@@ -1,6 +1,7 @@
 package groupone.userservice.dao;
 
 import groupone.userservice.entity.User;
+import groupone.userservice.exception.InvalidTypeAuthorization;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,15 +33,12 @@ public class UserDao extends AbstractHibernateDao<User> {
     }
 
     public void addUser(User user) throws DataIntegrityViolationException {
-//        try (Session session = this.getCurrentSession()) {
-//            Transaction tx;
-//            tx = session.beginTransaction();
-//            session.save(user);
-//            tx.commit();
-//        } catch (Exception e) {
-//            throw new DataIntegrityViolationException(e.getMessage() + " " + e.getCause().getLocalizedMessage());
-//        }
         this.add(user);
+    }
+
+    public void setType(User user, int type) throws InvalidTypeAuthorization {
+        if(type == 0) throw new InvalidTypeAuthorization("Cannot assign SUPER ADMIN type to users.");
+        else user.setType(type);
     }
 
     public void deleteUser(User user) {

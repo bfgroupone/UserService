@@ -1,10 +1,12 @@
 package groupone.userservice.service;
 
 import groupone.userservice.dao.UserDao;
+import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.dto.response.DataResponse;
 import groupone.userservice.entity.History;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
+import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -128,6 +130,29 @@ public class UserService implements UserDetailsService {
             user.setProfileImageURL(profileImageUrl);
         }
         userDao.addUser(user);
+    }
+    @Transactional
+    public User updateUserProfile(UserPatchRequest request, int uid) {
+        User user = userDao.getUserById(uid);
+        if(!request.getProfileImageURL().isEmpty()) {
+            user.setProfileImageURL(request.getProfileImageURL());
+        }
+        if(!request.getEmail().isEmpty()) {
+            // sending verification code,
+            // user type is invalid
+//            user.setEmail(request.getEmail());
+//            user.setType(3);
+            System.out.println("email empty");
+            // code to send email for validation
+        }
+        return user;
+    }
+
+    @Transactional
+    public User updateUserType(int uid, int type) throws InvalidTypeAuthorization {
+        User user = userDao.getUserById(uid);
+        userDao.setType(user, type);
+        return user;
     }
 
 }

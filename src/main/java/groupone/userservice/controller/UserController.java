@@ -2,9 +2,11 @@ package groupone.userservice.controller;
 
 import groupone.userservice.dto.request.LoginRequest;
 import groupone.userservice.dto.request.RegisterRequest;
+import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.dto.response.DataResponse;
 import groupone.userservice.entity.History;
 import groupone.userservice.entity.User;
+import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
 import groupone.userservice.security.JwtProvider;
 import groupone.userservice.service.UserService;
@@ -19,7 +21,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -53,11 +54,11 @@ public class UserController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<AllHistoryResponse> getHistory(){
-        List<History> data =  userService.getHistory();
+    public ResponseEntity<DataResponse> getHistory(){
+        List<History> data=  userService.getHistory();
 //        for(History h: data) System.out.println(h.getId());
-        AllHistoryResponse res = AllHistoryResponse.builder()
-                .historylist(data)
+        DataResponse res = DataResponse.builder()
+                .data(data)
                 .build();
         return ResponseEntity.ok(res);
     }
@@ -96,6 +97,27 @@ public class UserController {
                 DataResponse.builder()
                         .message("Registered, please log in with your new account")
                         .build(), HttpStatus.OK);
+    }
+    @PatchMapping("/users/{id}")
+    public ResponseEntity<DataResponse> modifiedUserProfile(@RequestBody UserPatchRequest request, @PathVariable int id) {
+        User data = userService.updateUserProfile(request, id);
+
+        DataResponse res = DataResponse.builder()
+                .data(data)
+                .build();
+        return ResponseEntity.ok(res);
+
+    }
+
+    @PatchMapping("/users/{id}/{type}")
+    public ResponseEntity<DataResponse> modifiedUserType(@PathVariable int id, @PathVariable int type) throws InvalidTypeAuthorization {
+        User data = userService.updateUserType(id,type);
+
+        DataResponse res = DataResponse.builder()
+                .data(data)
+                .build();
+        return ResponseEntity.ok(res);
+
     }
 
 
