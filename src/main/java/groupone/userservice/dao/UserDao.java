@@ -44,5 +44,7 @@ public class UserDao extends AbstractHibernateDao<User> {
     public void deleteUser(User user) {
         this.delete(user);
     }
-
+    public User getUserById(Integer user_id){
+        return this.findById(user_id);
+    }
 }

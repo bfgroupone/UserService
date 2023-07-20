@@ -1,14 +1,19 @@
 package groupone.userservice.service;
 
 import groupone.userservice.dao.UserDao;
+
 import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.dto.response.DataResponse;
-import groupone.userservice.entity.History;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
 import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,29 +23,26 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserDetailsService {
+    @Value("${email.validation.token.key}")
+    private String validationEmailKey;
+
     private UserDao userDao;
-    private RemoteHistoryService remoteHistoryService;
 
     @Autowired
     public void setUserDao(UserDao userDao) {
         this.userDao = userDao;
     }
 
-    @Autowired
-    public void setRemoteHistoryService(RemoteHistoryService remoteHistoryService) {
-        this.remoteHistoryService = remoteHistoryService;
-    }
+
 
 
     @Transactional
@@ -108,12 +110,6 @@ public class UserService implements UserDetailsService {
         return userAuthorities;
     }
 
-    @Transactional
-    public List<History> getHistory() {
-        DataResponse response = remoteHistoryService.getAllHistory().getBody();
-        List<History> histories = (List<History>) response.getData();
-        return histories;
-    }
 
     @Transactional
     public void addUser(String firstName, String lastName, String email, String password, String profileImageUrl) {
@@ -157,5 +153,40 @@ public class UserService implements UserDetailsService {
         userDao.setType(user, type);
         return user;
     }
+    public User getUserById(Integer userId) {
+        return userDao.getUserById(userId);
+    }
 
+    @Transactional
+    public void deleteUser(User user) {
+        userDao.deleteUser(user);
+    }
+
+    public String createValidationToken(int userId) {
+        // Calculate the expiration time (3 hours from now)
+        long expirationTimeMillis = System.currentTimeMillis() + 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+        Date expirationDate = new Date(expirationTimeMillis); // Build the JWT token
+        String token = Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .setExpiration(expirationDate)
+                .signWith(SignatureAlgorithm.HS256, validationEmailKey)
+                .compact();
+        return token;
+    }
+
+    public void isJwtTokenValid(String token) {
+        try {
+            // Parse the token using the secret key
+            Jws<Claims> claimsJws = Jwts.parser().setSigningKey(validationEmailKey).parseClaimsJws(token);
+
+
+            // Check if the token has expired
+//            Date expirationDate = claimsJws.getBody().getExpiration();
+//            Date currentDate = new Date();
+//            return !currentDate.after(expirationDate);
+
+        } catch (Exception e) {
+            // Token is invalid or has expired return false; }
+        }
+    }
 }
