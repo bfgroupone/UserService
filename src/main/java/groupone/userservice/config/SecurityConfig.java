@@ -10,7 +10,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -62,6 +61,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/user-service/login").permitAll()
                 .antMatchers("/user-service/register").permitAll()
+                .antMatchers(HttpMethod.GET, "/user-service/validate").permitAll()
 //                .antMatchers("/user-service/users/*").permitAll()
                 .antMatchers("/user-service/users/*/1").hasAuthority("promote")
                 .antMatchers("/user-service/users/*/*").hasAuthority("ban_unban")

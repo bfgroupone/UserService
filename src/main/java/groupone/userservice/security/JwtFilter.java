@@ -27,31 +27,31 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if (request.getRequestURI().equals("/user-service/register") || request.getRequestURI().equals("/user-service/login")) {
+        if (request.getRequestURI().equals("/user-service/register")
+                || request.getRequestURI().equals("/user-service/login")
+                || (request.getRequestURI().equals("/user-service/validate") && request.getMethod().equals("GET"))) {
             filterChain.doFilter(request, response);
             return;
         }
 
-            Optional<AuthUserDetail> authUserDetailOptional;
-            try{
-                String token = jwtProvider.extractToken(request);
-                authUserDetailOptional = jwtProvider.resolveToken(request); // extract jwt from request, generate a userdetails object
-                if (authUserDetailOptional.isPresent()){
+        Optional<AuthUserDetail> authUserDetailOptional;
+        try {
+            String token = jwtProvider.extractToken(request);
+            authUserDetailOptional = jwtProvider.resolveToken(request); // extract jwt from request, generate a userdetails object
+            if (authUserDetailOptional.isPresent()) {
 
-                    AuthUserDetail authUserDetail = authUserDetailOptional.get();
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            authUserDetail.getUsername(),
-                            token,
-                            authUserDetail.getAuthorities()
-                    ); // generate authentication object
+                AuthUserDetail authUserDetail = authUserDetailOptional.get();
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        authUserDetail.getUsername(),
+                        token,
+                        authUserDetail.getAuthorities()
+                ); // generate authentication object
 
-                    SecurityContextHolder.getContext().setAuthentication(authentication); // put authentication object in the secruitycontext
-                }
-                filterChain.doFilter(request, response);
-            } catch (NoTokenException e ){
-                e.printStackTrace();
+                SecurityContextHolder.getContext().setAuthentication(authentication); // put authentication object in the secruitycontext
             }
-
-
+            filterChain.doFilter(request, response);
+        } catch (NoTokenException e) {
+            e.printStackTrace();
+        }
     }
 }

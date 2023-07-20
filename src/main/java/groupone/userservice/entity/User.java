@@ -29,7 +29,6 @@ public class User {
     @Column(nullable = false)
     private String lastName;
 
-
     @Column(nullable = false)
     private String password;
 
@@ -41,6 +40,9 @@ public class User {
 
     @Column
     private String profileImageURL;
+
+    @Column
+    private String validationToken;
 
     public User(String firstName, String lastName, String email, String password) {
         this.firstName = firstName;

@@ -1,9 +1,6 @@
 package groupone.userservice.controller;
 
-import groupone.userservice.dto.request.LoginRequest;
-import groupone.userservice.dto.request.RegisterRequest;
-import groupone.userservice.dto.request.UserPatchRequest;
-import groupone.userservice.dto.request.UserRegistrationRequest;
+import groupone.userservice.dto.request.*;
 import groupone.userservice.dto.response.DataResponse;
 import groupone.userservice.entity.User;
 import groupone.userservice.exception.InvalidTypeAuthorization;
@@ -72,7 +69,7 @@ public class UserController {
         AuthUserDetail authUserDetail = (AuthUserDetail) authentication.getPrincipal();
 
         String token = jwtProvider.createToken(authUserDetail);
-        System.out.println("Bearer "+token);
+        System.out.println("Bearer " + token);
 
         return new ResponseEntity<>(
                 DataResponse.builder()
@@ -85,13 +82,13 @@ public class UserController {
     public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request) throws DataIntegrityViolationException {
 //        if (bindingResult.hasErrors()) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
-        userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view");
+        String token = userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view");
 
         //        TODO: only if user is successfully added
         UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
                 .recipient(request.getEmail())
-                .subject("test")
-                .msgBody("test")
+                .subject("Please click the link to validate your account")
+                .msgBody("http://localhost:8082/user-service/validate?token=" + token)
                 .build();
 
         String jsonMessage = SerializeUtil.serialize(registrationRequest);
@@ -103,6 +100,7 @@ public class UserController {
                         .message("Registered, please log in with your new account")
                         .build(), HttpStatus.OK);
     }
+
     @PatchMapping("/users/{id}")
     public ResponseEntity<DataResponse> modifiedUserProfile(@RequestBody UserPatchRequest request, @PathVariable int id) {
         User data = userService.updateUserProfile(request, id);
@@ -115,15 +113,15 @@ public class UserController {
     }
 
     @PatchMapping("/users/{id}/{type}")
-    public ResponseEntity<DataResponse> modifiedUserType(@PathVariable int id, @PathVariable int type)  {
+    public ResponseEntity<DataResponse> modifiedUserType(@PathVariable int id, @PathVariable int type) {
         try {
-            User data = userService.updateUserType(id,type);
+            User data = userService.updateUserType(id, type);
 
             DataResponse res = DataResponse.builder()
                     .data(data)
                     .build();
             return ResponseEntity.ok(res);
-        } catch(InvalidTypeAuthorization e) {
+        } catch (InvalidTypeAuthorization e) {
             DataResponse res = DataResponse.builder()
                     .data("Cannot assign SUPER ADMIN type.")
                     .build();
@@ -134,7 +132,7 @@ public class UserController {
     @GetMapping("/user")
     public ResponseEntity<DataResponse> getUserById(@RequestParam("userId") Integer userId) {
         User exist = userService.getUserById(userId);
-        if(exist == null){
+        if (exist == null) {
             DataResponse response = DataResponse.builder()
                     .success(false)
                     .message("User not found")
@@ -147,10 +145,11 @@ public class UserController {
                 .data(exist)
                 .build());
     }
+
     @DeleteMapping("/user")
-    public ResponseEntity<DataResponse> deleteUesr(@RequestParam("userId") Integer userId){
+    public ResponseEntity<DataResponse> deleteUser(@RequestParam("userId") Integer userId) {
         User existingUser = userService.getUserById(userId);
-        if (existingUser == null){
+        if (existingUser == null) {
             DataResponse response = DataResponse.builder()
                     .success(false)
                     .message("User not found")
@@ -167,8 +166,28 @@ public class UserController {
     }
 
 
-//    @GetMapping("/validate")
-//    public ResponseEntity<DataResponse> createValidationEmailToken() {
-//        userService.createValidationToken()
-//    }
+    @PostMapping("/validate")
+    public ResponseEntity<DataResponse> createValidationEmailToken(@RequestBody CreateValidationEmailRequest request) {
+        String token = createValidationEmailToken(request.getUserId());
+
+        return ResponseEntity.ok(DataResponse.builder()
+                .success(true)
+                .message("New validation email sent")
+                .data(token)
+                .build());
+    }
+
+    private String createValidationEmailToken(int userId) {
+        return userService.createValidationToken(userId);
+    }
+
+    @GetMapping("/validate")
+    public ResponseEntity<DataResponse> validateEmailToken(@RequestParam("token") String token) {
+        boolean isValid = userService.validateEmailToken(token, false);
+
+        return ResponseEntity.ok(DataResponse.builder()
+                .success(true)
+                .message("Token valid: " + isValid)
+                .build());
+    }
 }

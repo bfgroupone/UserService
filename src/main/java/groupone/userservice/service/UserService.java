@@ -1,9 +1,7 @@
 package groupone.userservice.service;
 
 import groupone.userservice.dao.UserDao;
-
 import groupone.userservice.dto.request.UserPatchRequest;
-import groupone.userservice.dto.response.DataResponse;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
 import groupone.userservice.exception.InvalidTypeAuthorization;
@@ -23,10 +21,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,8 +39,6 @@ public class UserService implements UserDetailsService {
     public void setUserDao(UserDao userDao) {
         this.userDao = userDao;
     }
-
-
 
 
     @Transactional
@@ -112,7 +108,7 @@ public class UserService implements UserDetailsService {
 
 
     @Transactional
-    public void addUser(String firstName, String lastName, String email, String password, String profileImageUrl) {
+    public String addUser(String firstName, String lastName, String email, String password, String profileImageUrl) {
         User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
@@ -121,19 +117,25 @@ public class UserService implements UserDetailsService {
                 .dateJoined(new Date(Timestamp.valueOf(LocalDateTime.now()).getTime()))
                 .type(UserType.NORMAL_USER_NOT_VALID.ordinal())
                 .build();
-        
+
         if (profileImageUrl.length() != 0) {
             user.setProfileImageURL(profileImageUrl);
         }
-        userDao.addUser(user);
+
+        int userId = userDao.addUser(user);
+        String token = createValidationToken(userId);
+        user.setValidationToken(token);
+
+        return token;
     }
+
     @Transactional
     public User updateUserProfile(UserPatchRequest request, int uid) {
         User user = userDao.getUserById(uid);
-        if(!request.getProfileImageURL().isEmpty()) {
+        if (!request.getProfileImageURL().isEmpty()) {
             user.setProfileImageURL(request.getProfileImageURL());
         }
-        if(!request.getEmail().equals("")) {
+        if (!request.getEmail().equals("")) {
             // sending verification code,
             // user type is invalid
             user.setEmail(request.getEmail());
@@ -141,7 +143,7 @@ public class UserService implements UserDetailsService {
 //            System.out.println("email empty");
             // code to send email for validation
         }
-        if(!request.getPassword().equals("")) {
+        if (!request.getPassword().equals("")) {
             user.setPassword(request.getPassword());
         }
         return user;
@@ -153,6 +155,7 @@ public class UserService implements UserDetailsService {
         userDao.setType(user, type);
         return user;
     }
+
     public User getUserById(Integer userId) {
         return userDao.getUserById(userId);
     }
@@ -162,31 +165,54 @@ public class UserService implements UserDetailsService {
         userDao.deleteUser(user);
     }
 
+    @Transactional
     public String createValidationToken(int userId) {
+        User user = userDao.getUserById(userId);
+
+        String token = user.getValidationToken();
+
+        // If current token is valid, reuse it
+        if (validateEmailToken(token, true)) {
+            return token;
+        }
+
         // Calculate the expiration time (3 hours from now)
         long expirationTimeMillis = System.currentTimeMillis() + 3 * 60 * 60 * 1000; // 3 hours in milliseconds
         Date expirationDate = new Date(expirationTimeMillis); // Build the JWT token
-        String token = Jwts.builder()
+        token = Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .setExpiration(expirationDate)
                 .signWith(SignatureAlgorithm.HS256, validationEmailKey)
                 .compact();
+        user.setValidationToken(token);
         return token;
     }
 
-    public void isJwtTokenValid(String token) {
+    @Transactional
+    public boolean validateEmailToken(String token, boolean checkOnly) {
         try {
-            // Parse the token using the secret key
             Jws<Claims> claimsJws = Jwts.parser().setSigningKey(validationEmailKey).parseClaimsJws(token);
 
-
-            // Check if the token has expired
-//            Date expirationDate = claimsJws.getBody().getExpiration();
-//            Date currentDate = new Date();
-//            return !currentDate.after(expirationDate);
-
+            Date expirationDate = claimsJws.getBody().getExpiration();
+            if (isJwtTokenValid(expirationDate)) {
+                if (checkOnly) {
+                    return true;
+                }
+                int userId = Integer.parseInt(claimsJws.getBody().getSubject());
+                User user = userDao.getUserById(userId);
+                userDao.setType(user, UserType.NORMAL_USER.ordinal());
+                return true;
+            } else {
+                return false;
+            }
         } catch (Exception e) {
-            // Token is invalid or has expired return false; }
+            return false;
         }
+    }
+
+    private boolean isJwtTokenValid(Date expirationDate) {
+        Date currentDate = new Date();
+
+        return !currentDate.after(expirationDate);
     }
 }
