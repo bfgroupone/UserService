@@ -19,9 +19,11 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping()
@@ -118,6 +120,15 @@ public class UserController {
 
     @PatchMapping("/users/{id}")
     public ResponseEntity<DataResponse> modifiedUserProfile(@RequestBody UserPatchRequest request, @PathVariable int id) {
+        Optional<User> possibleDumplicationEmail =  userService.getAllUsers().stream().filter(user -> user.getEmail().equals(request.getEmail())).findAny();
+        if(possibleDumplicationEmail.isPresent()) {
+            return new ResponseEntity<>(
+                    DataResponse.builder()
+                            .success(false)
+                            .message("This email has already registered, please go to login.")
+                            .build(), HttpStatus.FORBIDDEN);
+        }
+
         User data = userService.updateUserProfile(request, id);
 
         DataResponse res = DataResponse.builder()
