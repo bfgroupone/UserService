@@ -19,7 +19,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -57,7 +56,7 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<DataResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<DataResponse> login(@RequestBody LoginRequest request) throws BadCredentialsException{
 
         Authentication authentication;
 
@@ -66,17 +65,12 @@ public class UserController {
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
         } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                    DataResponse.builder()
-                            .success(false)
-                            .message("Incorrect credentials, please try again.")
-                            .build());
+            throw new BadCredentialsException("Incorrect credentials, please try again.");
         }
 
         AuthUserDetail authUserDetail = (AuthUserDetail) authentication.getPrincipal();
 
         String token = jwtProvider.createToken(authUserDetail);
-        System.out.println("Bearer " + token);
 
         return new ResponseEntity<>(
                 DataResponse.builder()
@@ -87,8 +81,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request) throws DataIntegrityViolationException {
-//        if (bindingResult.hasErrors()) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request) throws DataIntegrityViolationException, InvalidCredentialsException {
         try {
             String token = userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view");
 
@@ -108,20 +101,16 @@ public class UserController {
                             .success(true)
                             .message("Registered, please log in with your new account")
                             .build(), HttpStatus.OK);
-        } catch (InvalidCredentialsException e){
-            DataResponse response = DataResponse.builder()
-                    .success(false)
-                    .message(e.getMessage())
-                    .build();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        } catch (InvalidCredentialsException e) {
+            throw new InvalidCredentialsException(e.getMessage());
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
-
     }
 
     @PatchMapping("/users/{id}")
     public ResponseEntity<DataResponse> modifiedUserProfile(@RequestBody UserPatchRequest request, @PathVariable int id) {
-        Optional<User> possibleDumplicationEmail =  userService.getAllUsers().stream().filter(user -> user.getEmail().equals(request.getEmail())).findAny();
-        if(possibleDumplicationEmail.isPresent()) {
+        Optional<User> possibleDumplicationEmail = userService.getAllUsers().stream().filter(user -> user.getEmail().equals(request.getEmail())).findAny();
+        if (possibleDumplicationEmail.isPresent()) {
             return new ResponseEntity<>(
                     DataResponse.builder()
                             .success(false)
