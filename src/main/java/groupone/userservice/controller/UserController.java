@@ -144,10 +144,11 @@ public class UserController {
 
             String jsonMessage = SerializeUtil.serialize(registrationRequest);
             msg += jsonMessage;
-//            System.out.println(jsonMessage);
-//            System.out.println("jsonMsg");
+            System.out.println(msg);
 
             rabbitTemplate.convertAndSend("x.user-registration", "send-email", jsonMessage);
+
+            System.out.println("send....");
 
         }
 

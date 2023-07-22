@@ -164,27 +164,25 @@ public class UserService implements UserDetailsService {
         int origType = user.getType();
         /*
         ignore if newType is same with originalType
-        cannot modify super admin
-        need "promote" to modify admin
-        need "ban_unban" to invalidUser/visitor -> normalUser
-                            normalUser -> invalidUser/visitor
-        do nothing invalidUser <-> visitor
+        cannot modify super admin(cannot ban)
+        need "promote" to modify normal-> admin
+        need "ban_unban" to invalidUser -> normalUser
+                            normalUser -> invalidUser
+        do nothing otherwise
          */
         if(type == origType) return user;
-        if(type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal()) throw new InvalidTypeAuthorization("Do not have promote authority modifying SUPER ADMIN.");
-        if(type == UserType.ADMIN.ordinal() || origType == UserType.ADMIN.ordinal()) {
-            for(String a: authorities) System.out.println("(promoe)"+a);
-            if(authorities.contains("promote")) user.setType(type);
-            else throw new InvalidTypeAuthorization("Do not have promote authority modifying ADMIN.");
-       } else if(
-                (type == UserType.NORMAL_USER.ordinal()
-                        && (origType == UserType.NORMAL_USER_NOT_VALID.ordinal() || origType == UserType.VISITOR_BANNED.ordinal()))
-
-                        || (type == UserType.NORMAL_USER_NOT_VALID.ordinal() || type == UserType.VISITOR_BANNED.ordinal())
-                        && origType == UserType.NORMAL_USER.ordinal()) {
+        else if(type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal()) throw new InvalidTypeAuthorization("Do not have authority modifying SUPER ADMIN.");
+        else if(type == UserType.ADMIN.ordinal() ) {
+            if(origType == UserType.NORMAL_USER.ordinal() && authorities.contains("promote") ) user.setType(type);
+            else throw new InvalidTypeAuthorization("Do not have promote authority or cannot make type" +origType+" an ADMIN.");
+       }  else if(
+                (type == UserType.NORMAL_USER.ordinal() && origType == UserType.NORMAL_USER_NOT_VALID.ordinal())
+                        || (type == UserType.NORMAL_USER_NOT_VALID.ordinal() && origType == UserType.NORMAL_USER.ordinal())) {
             // unban or ban
             if(authorities.contains("ban_unban")) user.setType(type);
             else throw new InvalidTypeAuthorization("Do not have ban_unban authority.");
+        } else {
+            throw new InvalidTypeAuthorization("Invalid type change.");
         }
             return user;
     }
