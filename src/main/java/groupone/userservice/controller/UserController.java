@@ -45,7 +45,6 @@ public class UserController {
     @GetMapping("/users")
     public ResponseEntity<DataResponse> getAllUsers() {
         List<User> data = userService.getAllUsers();
-        for (User u : data) System.out.println(u.getFirstName());
         DataResponse res = DataResponse.builder()
                 .success(true)
                 .message("Success")
@@ -56,8 +55,7 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<DataResponse> login(@RequestBody LoginRequest request) throws BadCredentialsException{
-
+    public ResponseEntity<DataResponse> login(@RequestBody LoginRequest request) throws BadCredentialsException {
         Authentication authentication;
 
         try {
@@ -65,7 +63,11 @@ public class UserController {
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
         } catch (AuthenticationException e) {
-            throw new BadCredentialsException("Incorrect credentials, please try again.");
+            return new ResponseEntity<>(
+                    DataResponse.builder()
+                            .success(false)
+                            .message("Incorrect credentials, please try again.")
+                            .build(), HttpStatus.OK);
         }
 
         AuthUserDetail authUserDetail = (AuthUserDetail) authentication.getPrincipal();
@@ -85,7 +87,6 @@ public class UserController {
         try {
             String token = userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view");
 
-            //        TODO: only if user is successfully added
             UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
                     .recipient(request.getEmail())
                     .subject("Please click the link to validate your account")
@@ -102,53 +103,57 @@ public class UserController {
                             .message("Registered, please log in with your new account")
                             .build(), HttpStatus.OK);
         } catch (InvalidCredentialsException e) {
-            throw new InvalidCredentialsException(e.getMessage());
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            return new ResponseEntity<>(
+                    DataResponse.builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .build(), HttpStatus.OK);
         }
     }
 
     @PatchMapping("/users/{id}")
     public ResponseEntity<DataResponse> modifiedUserProfile(@RequestBody UserPatchRequest request, @PathVariable int id) {
-        Optional<User> possibleDumplicationEmail = userService.getAllUsers().stream().filter(user -> user.getEmail().equals(request.getEmail())).findAny();
-        if (possibleDumplicationEmail.isPresent()) {
+        Optional<User> possibleDuplicationEmail = userService.getAllUsers().stream().filter(user -> user.getEmail().equals(request.getEmail())).findAny();
+        if (possibleDuplicationEmail.isPresent()) {
             return new ResponseEntity<>(
                     DataResponse.builder()
                             .success(false)
                             .message("This email has already registered, please go to login.")
-                            .build(), HttpStatus.FORBIDDEN);
+                            .build(), HttpStatus.OK);
         }
 
-        User data = userService.updateUserProfile(request, id);
+        User updatedUserProfile = userService.updateUserProfile(request, id);
 
-        DataResponse res = DataResponse.builder()
-                .success(true)
-                .data(data)
-                .build();
-        return ResponseEntity.ok(res);
-
+        return new ResponseEntity<>(
+                DataResponse.builder()
+                        .success(true)
+                        .data(updatedUserProfile)
+                        .build(), HttpStatus.OK);
     }
 
     @PatchMapping("/users/{id}/{type}")
     public ResponseEntity<DataResponse> modifiedUserType(@PathVariable int id, @PathVariable int type) {
         try {
-            User data = userService.updateUserType(id, type);
+            User updatedUser = userService.updateUserType(id, type);
 
-            DataResponse res = DataResponse.builder()
-                    .data(data)
-                    .build();
-            return ResponseEntity.ok(res);
+            return new ResponseEntity<>(
+                    DataResponse.builder()
+                            .success(true)
+                            .data(updatedUser)
+                            .build(), HttpStatus.OK);
         } catch (InvalidTypeAuthorization e) {
-            DataResponse res = DataResponse.builder()
-                    .data("Cannot assign SUPER ADMIN type.")
-                    .build();
-            return ResponseEntity.badRequest().body(res);
+            return new ResponseEntity<>(
+                    DataResponse.builder()
+                            .success(false)
+                            .message("Cannot assign SUPER ADMIN type.")
+                            .build(), HttpStatus.OK);
         }
     }
 
     @GetMapping("/user")
     public ResponseEntity<DataResponse> getUserById(@RequestParam("userId") Integer userId) {
-        User exist = userService.getUserById(userId);
-        if (exist == null) {
+        User user = userService.getUserById(userId);
+        if (user == null) {
             DataResponse response = DataResponse.builder()
                     .success(false)
                     .message("User not found")
@@ -158,7 +163,7 @@ public class UserController {
         return ResponseEntity.ok(DataResponse.builder()
                 .success(true)
                 .message("Get user by id Success")
-                .data(exist)
+                .data(user)
                 .build());
     }
 
