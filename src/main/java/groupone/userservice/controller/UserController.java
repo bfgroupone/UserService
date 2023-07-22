@@ -6,6 +6,7 @@ import groupone.userservice.entity.User;
 import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
 import groupone.userservice.security.JwtProvider;
+import groupone.userservice.security.LoginUserAuthentication;
 import groupone.userservice.service.UserService;
 import groupone.userservice.util.SerializeUtil;
 import org.apache.http.auth.InvalidCredentialsException;
@@ -19,8 +20,15 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -123,32 +131,56 @@ public class UserController {
                             .build(), HttpStatus.OK);
         }
 
-        User updatedUserProfile = userService.updateUserProfile(request, id);
+        User data = userService.updateUserProfile(request, id);
+        String msg = "";
+        if(!request.getEmail().equals("")) {
+//            //        TODO: sent verification email
+            String token = createValidationEmailToken(id);
+            UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
+                    .recipient(request.getEmail())
+                    .subject("Please click the link to validate your account")
+                    .msgBody("http://localhost:8082/user-service/validate?token=" + token)
+                    .build();
 
-        return new ResponseEntity<>(
-                DataResponse.builder()
-                        .success(true)
-                        .data(updatedUserProfile)
-                        .build(), HttpStatus.OK);
+            String jsonMessage = SerializeUtil.serialize(registrationRequest);
+            msg += jsonMessage;
+//            System.out.println(jsonMessage);
+//            System.out.println("jsonMsg");
+
+            rabbitTemplate.convertAndSend("x.user-registration", "send-email", jsonMessage);
+
+        }
+
+        DataResponse res = DataResponse.builder()
+                .success(true)
+                .data(data)
+                .message(msg)
+                .build();
+        return ResponseEntity.ok(res);
     }
 
     @PatchMapping("/users/{id}/{type}")
     public ResponseEntity<DataResponse> modifiedUserType(@PathVariable int id, @PathVariable int type) {
-        try {
-            User updatedUser = userService.updateUserType(id, type);
 
-            return new ResponseEntity<>(
-                    DataResponse.builder()
-                            .success(true)
-                            .data(updatedUser)
-                            .build(), HttpStatus.OK);
+        UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+        List<GrantedAuthority> authorities  = (List<GrantedAuthority>) auth.getAuthorities();
+        for(GrantedAuthority a: authorities) System.out.println("=>"+a.getAuthority());
+        List<String> authorities_string = new ArrayList<>();
+        for(GrantedAuthority a: authorities) authorities_string.add(a.getAuthority());
+        User data;
+        try {
+            data = userService.updateUserType(id, type, authorities_string);
         } catch (InvalidTypeAuthorization e) {
-            return new ResponseEntity<>(
-                    DataResponse.builder()
-                            .success(false)
-                            .message("Cannot assign SUPER ADMIN type.")
-                            .build(), HttpStatus.OK);
+            DataResponse res = DataResponse.builder()
+                    .message(e.getMessage())
+                    .success(false)
+                    .build();
+            return ResponseEntity.badRequest().body(res);
         }
+        DataResponse res = DataResponse.builder()
+                .data(data)
+                .build();
+        return ResponseEntity.ok(res);
     }
 
     @GetMapping("/user")
@@ -210,6 +242,24 @@ public class UserController {
         return ResponseEntity.ok(DataResponse.builder()
                 .success(true)
                 .message("Token valid: " + isValid)
+                .build());
+    }
+
+
+    @PostMapping("/logout")
+    public ResponseEntity<DataResponse> logout(HttpServletRequest request,HttpServletResponse response) {
+        HttpSession session= request.getSession(false);
+        SecurityContextHolder.clearContext();
+        session= request.getSession(false);
+        if(session != null) {
+            session.invalidate();
+        }
+        for(Cookie cookie : request.getCookies()) {
+            cookie.setMaxAge(0);
+        }
+        return ResponseEntity.ok(DataResponse.builder()
+                .success(true)
+                .message("Successfully logout!")
                 .build());
     }
 }

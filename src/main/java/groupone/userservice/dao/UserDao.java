@@ -36,11 +36,6 @@ public class UserDao extends AbstractHibernateDao<User> {
         return this.add(user);
     }
 
-    public void setType(User user, int type) throws InvalidTypeAuthorization {
-        if(type == UserType.SUPER_ADMIN.ordinal()) throw new InvalidTypeAuthorization("Cannot assign SUPER ADMIN type to users.");
-        else user.setType(type);
-    }
-
     public void deleteUser(User user) {
         this.delete(user);
     }

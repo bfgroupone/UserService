@@ -57,6 +57,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable().cors().and()
+                .logout().clearAuthentication(true)
+                .logoutSuccessUrl("/")
+                .deleteCookies("JSESSIONID")
+                .invalidateHttpSession(true)
+                .and()
 
                 .authorizeRequests()
                 .antMatchers("/user-service/login").permitAll()
@@ -64,8 +69,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.GET, "/user-service/validate").permitAll()
 //                .antMatchers("/user-service/users/*").permitAll()
                 .antMatchers("/user-service/users").hasAuthority("admin_read")
-                .antMatchers("/user-service/users/*/1").hasAuthority("promote")
-                .antMatchers("/user-service/users/*/*").hasAuthority("ban_unban")
+//                .antMatchers("/user-service/users/*/1").hasAuthority("promote")
+//                .antMatchers("/user-service/users/*/*").hasAuthority("ban_unban")
+//                .logout().logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+//                .logoutSuccessUrl("/logout.done").deleteCookies("JSESSIONID")
+//                .invalidateHttpSession(true)
 //                .antMatchers(HttpMethod.GET,"/users").hasAuthority("user_read")
 //                .antMatchers(HttpMethod.PATCH,"/products/*").hasAuthority("product_update")
 //                .antMatchers(HttpMethod.POST,"/products").hasAuthority("product_update")

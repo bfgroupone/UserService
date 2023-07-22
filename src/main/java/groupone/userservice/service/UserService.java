@@ -159,10 +159,34 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public User updateUserType(int uid, int type) throws InvalidTypeAuthorization {
+    public User updateUserType(int uid, int type, List<String> authorities) throws InvalidTypeAuthorization {
         User user = userDao.getUserById(uid);
-        userDao.setType(user, type);
-        return user;
+        int origType = user.getType();
+        /*
+        ignore if newType is same with originalType
+        cannot modify super admin
+        need "promote" to modify admin
+        need "ban_unban" to invalidUser/visitor -> normalUser
+                            normalUser -> invalidUser/visitor
+        do nothing invalidUser <-> visitor
+         */
+        if(type == origType) return user;
+        if(type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal()) throw new InvalidTypeAuthorization("Do not have promote authority modifying SUPER ADMIN.");
+        if(type == UserType.ADMIN.ordinal() || origType == UserType.ADMIN.ordinal()) {
+            for(String a: authorities) System.out.println("(promoe)"+a);
+            if(authorities.contains("promote")) user.setType(type);
+            else throw new InvalidTypeAuthorization("Do not have promote authority modifying ADMIN.");
+       } else if(
+                (type == UserType.NORMAL_USER.ordinal()
+                        && (origType == UserType.NORMAL_USER_NOT_VALID.ordinal() || origType == UserType.VISITOR_BANNED.ordinal()))
+
+                        || (type == UserType.NORMAL_USER_NOT_VALID.ordinal() || type == UserType.VISITOR_BANNED.ordinal())
+                        && origType == UserType.NORMAL_USER.ordinal()) {
+            // unban or ban
+            if(authorities.contains("ban_unban")) user.setType(type);
+            else throw new InvalidTypeAuthorization("Do not have ban_unban authority.");
+        }
+            return user;
     }
 
     public User getUserById(Integer userId) {
@@ -209,7 +233,7 @@ public class UserService implements UserDetailsService {
                 }
                 int userId = Integer.parseInt(claimsJws.getBody().getSubject());
                 User user = userDao.getUserById(userId);
-                userDao.setType(user, UserType.NORMAL_USER.ordinal());
+                user.setType(UserType.NORMAL_USER.ordinal());
                 return true;
             } else {
                 return false;
