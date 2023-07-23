@@ -171,14 +171,18 @@ public class UserService implements UserDetailsService {
                             normalUser -> invalidUser
         do nothing otherwise
          */
+        System.out.println("here");
+        System.out.println(authorities);
+        System.out.println("origin type: " + origType);
+        System.out.println("to type: " + type);
         if(type == origType) return user;
         else if(type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal()) throw new InvalidTypeAuthorization("Do not have authority modifying SUPER ADMIN.");
         else if(type == UserType.ADMIN.ordinal() ) {
             if(origType == UserType.NORMAL_USER.ordinal() && authorities.contains("promote") ) user.setType(type);
             else throw new InvalidTypeAuthorization("Do not have promote authority or cannot make type" +origType+" an ADMIN.");
        }  else if(
-                (type == UserType.NORMAL_USER.ordinal() && origType == UserType.NORMAL_USER_NOT_VALID.ordinal())
-                        || (type == UserType.NORMAL_USER_NOT_VALID.ordinal() && origType == UserType.NORMAL_USER.ordinal())) {
+                (type == UserType.NORMAL_USER.ordinal() && origType == UserType.VISITOR_BANNED.ordinal())
+                        || (type == UserType.VISITOR_BANNED.ordinal() && origType == UserType.NORMAL_USER.ordinal())) {
             // unban or ban
             if(authorities.contains("ban_unban")) user.setType(type);
             else throw new InvalidTypeAuthorization("Do not have ban_unban authority.");
