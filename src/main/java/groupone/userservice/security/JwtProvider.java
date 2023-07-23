@@ -35,7 +35,9 @@ public class JwtProvider {
         claims.put("permissions", authorities);
         claims.put("userId", userDetails.getUserId());
         claims.put("email", userDetails.getEmail());
+        claims.put("active", userDetails.getActive());
         claims.put("role", userDetails.getUserType());
+
         return Jwts.builder()
                 .setClaims(claims)
                 .signWith(SignatureAlgorithm.HS256, key)
@@ -64,14 +66,17 @@ public class JwtProvider {
 
         int userId = (int) claims.get("userId");
         String email = (String) claims.get("email");
+        boolean active = (boolean) claims.get("active");
 
         System.out.printf("userId %s\n", userId);
         System.out.printf("email %s\n", email);
+        System.out.printf("active %s\n", active);
 
         //return a userDetail object with the permissions the user has
         return Optional.of(AuthUserDetail.builder()
                 .email(email)
                 .userId(userId)
+                .active(active)
                 .authorities(authorities)
                 .build());
 
@@ -80,7 +85,7 @@ public class JwtProvider {
     public String extractToken(HttpServletRequest request) throws NoTokenException {
 
         String header = request.getHeader("Authorization");
-        if(header == null) {
+        if (header == null) {
             throw new NoTokenException("No token founded, please login first.");
         }
         if (header != null && header.startsWith("Bearer ")) {

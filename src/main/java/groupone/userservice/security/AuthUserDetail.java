@@ -14,6 +14,7 @@ public class AuthUserDetail implements UserDetails {
     private String password;
     private int userId;
     private String type;
+    private boolean active;
     private boolean accountNonExpired;
     private boolean accountNonLocked;
     private boolean credentialsNonExpired;
@@ -33,6 +34,10 @@ public class AuthUserDetail implements UserDetails {
     @Override
     public String getUsername() {
         return this.email;
+    }
+
+    public boolean getActive() {
+        return this.active;
     }
 
     public String getEmail() {

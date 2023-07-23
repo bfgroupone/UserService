@@ -1,6 +1,7 @@
 package groupone.userservice.service;
 
 import groupone.userservice.dao.UserDao;
+import groupone.userservice.dto.request.RegisterRequest;
 import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
@@ -48,13 +49,6 @@ public class UserService implements UserDetailsService {
         return users;
     }
 
-    @Transactional
-    public void createUser(User... users) {
-        for (User u : users) {
-            userDao.addUser(u);
-        }
-    }
-
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Optional<User> userOptional = userDao.loadUserByEmail(email);
@@ -69,6 +63,7 @@ public class UserService implements UserDetailsService {
                 .password(new BCryptPasswordEncoder().encode(user.getPassword()))
                 .userId(user.getId())
                 .type(UserType.getLabelFromOrdinal(user.getType()))
+                .active(user.isActive())
                 .authorities(getAuthoritiesFromUser(user))
                 .accountNonExpired(true)
                 .accountNonLocked(true)
@@ -101,35 +96,36 @@ public class UserService implements UserDetailsService {
             userAuthorities.add(new SimpleGrantedAuthority("update"));
         } else if (user.getType() == UserType.NORMAL_USER_NOT_VALID.ordinal()) {
             userAuthorities.add(new SimpleGrantedAuthority("read"));
-        } else if (user.getType() == UserType.VISITOR_BANNED.ordinal()) {
         }
 
         return userAuthorities;
     }
 
     @Transactional
-    public boolean existsByEmail(String email){
+    public boolean existsByEmail(String email) {
         return userDao.loadUserByEmail(email).isPresent();
     }
 
     @Transactional
-    public String addUser(String firstName, String lastName, String email, String password, String profileImageUrl) throws InvalidCredentialsException {
-        if (existsByEmail(email)) {
+    public String addUser(RegisterRequest request) throws InvalidCredentialsException {
+        if (existsByEmail(request.getEmail())) {
             throw new InvalidCredentialsException("Email already exists.");
         }
-        if(profileImageUrl.equals(""))
-            profileImageUrl = "https://bfgroupone.s3.amazonaws.com/1690076947341_default_avatar.png";
+
         User user = User.builder()
-                .firstName(firstName)
-                .lastName(lastName)
-                .email(email)
-                .password(password)
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(request.getPassword())
                 .dateJoined(new Date(Timestamp.valueOf(LocalDateTime.now()).getTime()))
                 .type(UserType.NORMAL_USER_NOT_VALID.ordinal())
+                .active(true)
                 .build();
 
-        if (profileImageUrl.length() != 0) {
-            user.setProfileImageURL(profileImageUrl);
+        if (request.getProfileImageURL() == null || request.getProfileImageURL().equals("")) {
+            user.setProfileImageURL("https://bfgroupone.s3.amazonaws.com/1690076947341_default_avatar.png");
+        } else {
+            user.setProfileImageURL(request.getProfileImageURL());
         }
 
         int userId = userDao.addUser(user);
@@ -142,20 +138,30 @@ public class UserService implements UserDetailsService {
     @Transactional
     public User updateUserProfile(UserPatchRequest request, int uid) {
         User user = userDao.getUserById(uid);
-        if (!request.getProfileImageURL().isEmpty()) {
-            user.setProfileImageURL(request.getProfileImageURL());
+
+        if (!request.getFirstName().equals("")) {
+            user.setFirstName(request.getFirstName());
         }
+
+        if (!request.getLastName().equals("")) {
+            user.setLastName(request.getLastName());
+        }
+
         if (!request.getEmail().equals("")) {
-            // sending verification code,
-            // user type is invalid
             user.setEmail(request.getEmail());
-            user.setType(3);
-//            System.out.println("email empty");
-            // code to send email for validation
+            user.setType(UserType.NORMAL_USER_NOT_VALID.ordinal());
+            this.createValidationToken(uid);
         }
+
         if (!request.getPassword().equals("")) {
             user.setPassword(request.getPassword());
         }
+
+        if (!request.getProfileImageURL().isEmpty()) {
+            user.setProfileImageURL(request.getProfileImageURL());
+            // TODO: upload profile image to S3
+        }
+
         return user;
     }
 
@@ -171,21 +177,38 @@ public class UserService implements UserDetailsService {
                             normalUser -> invalidUser
         do nothing otherwise
          */
-        if(type == origType) return user;
-        else if(type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal()) throw new InvalidTypeAuthorization("Do not have authority modifying SUPER ADMIN.");
-        else if(type == UserType.ADMIN.ordinal() ) {
-            if(origType == UserType.NORMAL_USER.ordinal() && authorities.contains("promote") ) user.setType(type);
-            else throw new InvalidTypeAuthorization("Do not have promote authority or cannot make type" +origType+" an ADMIN.");
-       }  else if(
-                (type == UserType.NORMAL_USER.ordinal() && origType == UserType.NORMAL_USER_NOT_VALID.ordinal())
-                        || (type == UserType.NORMAL_USER_NOT_VALID.ordinal() && origType == UserType.NORMAL_USER.ordinal())) {
-            // unban or ban
-            if(authorities.contains("ban_unban")) user.setType(type);
-            else throw new InvalidTypeAuthorization("Do not have ban_unban authority.");
+        if (type == origType) {
+            return user;
+        } else if (type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal()) {
+            throw new InvalidTypeAuthorization("Do not have authority modifying SUPER ADMIN.");
+        } else if (type == UserType.ADMIN.ordinal()) {
+            if (origType == UserType.NORMAL_USER.ordinal() && authorities.contains("promote")) {
+                user.setType(type);
+            } else {
+                throw new InvalidTypeAuthorization("Do not have promote authority or cannot make type" + origType + " an ADMIN.");
+            }
         } else {
             throw new InvalidTypeAuthorization("Invalid type change.");
         }
-            return user;
+        return user;
+    }
+
+    @Transactional
+    public User updateUserActive(int uid, List<String> authorities) throws InvalidTypeAuthorization {
+        User user = userDao.getUserById(uid);
+        int origType = user.getType();
+
+        if (origType == UserType.SUPER_ADMIN.ordinal() || origType == UserType.ADMIN.ordinal()) {
+            throw new InvalidTypeAuthorization("Can not ban user type: " + origType);
+        }
+
+        if (!authorities.contains("ban_unban")) {
+            throw new InvalidTypeAuthorization("Current user cannot ban/unban other users");
+        }
+
+        user.setActive(!user.isActive());
+
+        return user;
     }
 
     public User getUserById(Integer userId) {

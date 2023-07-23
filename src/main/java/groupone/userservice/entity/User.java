@@ -36,6 +36,9 @@ public class User {
     private Date dateJoined;
 
     @Column(nullable = false)
+    private boolean active;
+
+    @Column(nullable = false)
     private int type;
 
     @Column
@@ -43,12 +46,4 @@ public class User {
 
     @Column
     private String validationToken;
-
-    public User(String firstName, String lastName, String email, String password) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.password = password;
-        this.type = UserType.NORMAL_USER_NOT_VALID.ordinal();
-    }
 }
