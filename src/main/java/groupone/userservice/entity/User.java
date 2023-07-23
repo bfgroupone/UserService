@@ -36,6 +36,9 @@ public class User {
     private Date dateJoined;
 
     @Column(nullable = false)
+    private boolean active;
+
+    @Column(nullable = false)
     private int type;
 
     @Column
@@ -49,6 +52,7 @@ public class User {
         this.lastName = lastName;
         this.email = email;
         this.password = password;
+        this.active = true;
         this.type = UserType.NORMAL_USER_NOT_VALID.ordinal();
     }
 }

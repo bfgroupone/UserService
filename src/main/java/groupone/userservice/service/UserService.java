@@ -101,7 +101,6 @@ public class UserService implements UserDetailsService {
             userAuthorities.add(new SimpleGrantedAuthority("update"));
         } else if (user.getType() == UserType.NORMAL_USER_NOT_VALID.ordinal()) {
             userAuthorities.add(new SimpleGrantedAuthority("read"));
-        } else if (user.getType() == UserType.VISITOR_BANNED.ordinal()) {
         }
 
         return userAuthorities;
@@ -171,10 +170,6 @@ public class UserService implements UserDetailsService {
                             normalUser -> invalidUser
         do nothing otherwise
          */
-        System.out.println("here");
-        System.out.println(authorities);
-        System.out.println("origin type: " + origType);
-        System.out.println("to type: " + type);
         if (type == origType) return user;
         else if (type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal())
             throw new InvalidTypeAuthorization("Do not have authority modifying SUPER ADMIN.");
@@ -182,17 +177,27 @@ public class UserService implements UserDetailsService {
             if (origType == UserType.NORMAL_USER.ordinal() && authorities.contains("promote")) user.setType(type);
             else
                 throw new InvalidTypeAuthorization("Do not have promote authority or cannot make type" + origType + " an ADMIN.");
-        } else if (
-                (type == UserType.NORMAL_USER.ordinal() && origType == UserType.VISITOR_BANNED.ordinal())
-                        || (type == UserType.VISITOR_BANNED.ordinal() && origType == UserType.NORMAL_USER.ordinal())
-                        || (type == UserType.NORMAL_USER_NOT_VALID.ordinal() && origType == UserType.VISITOR_BANNED.ordinal())
-                        || (type == UserType.VISITOR_BANNED.ordinal() && origType == UserType.NORMAL_USER_NOT_VALID.ordinal())) {
-            // unban or ban
-            if (authorities.contains("ban_unban")) user.setType(type);
-            else throw new InvalidTypeAuthorization("Do not have ban_unban authority.");
         } else {
             throw new InvalidTypeAuthorization("Invalid type change.");
         }
+        return user;
+    }
+
+    @Transactional
+    public User updateUserActive(int uid, List<String> authorities) throws InvalidTypeAuthorization {
+        User user = userDao.getUserById(uid);
+        int origType = user.getType();
+
+        if (origType == UserType.SUPER_ADMIN.ordinal() || origType == UserType.ADMIN.ordinal()) {
+            throw new InvalidTypeAuthorization("Can not ban user type: " + origType);
+        }
+
+        if (!authorities.contains("ban_unban")) {
+            throw new InvalidTypeAuthorization("Current user cannot ban/unban other users");
+        }
+
+        user.setActive(!user.isActive());
+
         return user;
     }
 
