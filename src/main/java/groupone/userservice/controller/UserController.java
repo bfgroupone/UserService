@@ -28,9 +28,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping()
@@ -50,9 +49,14 @@ public class UserController {
         this.jwtProvider = jwtProvider;
         this.rabbitTemplate = rabbitTemplate;
     }
-
     @GetMapping("/users")
-    public ResponseEntity<DataResponse> getAllUsers() {
+    public ResponseEntity<DataResponse> getAllUsers(HttpServletRequest request) {
+//        System.out.println("http request: ");
+//        Enumeration<String> params = request.getAttributeNames();
+//        while(params.hasMoreElements()){
+//            String paramName = params.nextElement();
+//            System.out.println("Attr Name - "+paramName+", Value - "+request.getAttribute(paramName));
+//        }
         List<User> data = userService.getAllUsers();
         DataResponse res = DataResponse.builder()
                 .success(true)

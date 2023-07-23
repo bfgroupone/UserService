@@ -17,7 +17,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
-@PropertySource("classpath:application.properties")
 public class JwtProvider {
     @Value("${security.jwt.token.key}")
     private String key;
