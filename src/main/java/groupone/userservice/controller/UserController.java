@@ -79,6 +79,7 @@ public class UserController {
         }
 
         AuthUserDetail authUserDetail = (AuthUserDetail) authentication.getPrincipal();
+        String token = jwtProvider.createToken(authUserDetail);
 
         if (!authUserDetail.getActive()) {
             return new ResponseEntity<>(
@@ -87,8 +88,6 @@ public class UserController {
                             .message("User is banned, cannot login")
                             .build(), HttpStatus.OK);
         }
-
-        String token = jwtProvider.createToken(authUserDetail);
 
         return new ResponseEntity<>(
                 DataResponse.builder()

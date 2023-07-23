@@ -69,6 +69,7 @@ public class UserService implements UserDetailsService {
                 .password(new BCryptPasswordEncoder().encode(user.getPassword()))
                 .userId(user.getId())
                 .type(UserType.getLabelFromOrdinal(user.getType()))
+                .active(user.isActive())
                 .authorities(getAuthoritiesFromUser(user))
                 .accountNonExpired(true)
                 .accountNonLocked(true)

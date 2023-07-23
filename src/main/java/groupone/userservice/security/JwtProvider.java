@@ -38,6 +38,7 @@ public class JwtProvider {
         claims.put("email", userDetails.getEmail());
         claims.put("active", userDetails.getActive());
         claims.put("role", userDetails.getUserType());
+
         return Jwts.builder()
                 .setClaims(claims)
                 .signWith(SignatureAlgorithm.HS256, key)
