@@ -6,7 +6,6 @@ import groupone.userservice.entity.User;
 import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
 import groupone.userservice.security.JwtProvider;
-import groupone.userservice.security.LoginUserAuthentication;
 import groupone.userservice.service.UserService;
 import groupone.userservice.util.SerializeUtil;
 import org.apache.http.auth.InvalidCredentialsException;
@@ -81,6 +80,14 @@ public class UserController {
 
         AuthUserDetail authUserDetail = (AuthUserDetail) authentication.getPrincipal();
 
+        if (!authUserDetail.getActive()) {
+            return new ResponseEntity<>(
+                    DataResponse.builder()
+                            .success(false)
+                            .message("User is banned, cannot login")
+                            .build(), HttpStatus.OK);
+        }
+
         String token = jwtProvider.createToken(authUserDetail);
 
         return new ResponseEntity<>(
@@ -94,7 +101,7 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request) throws DataIntegrityViolationException, InvalidCredentialsException {
         try {
-            String token = userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(),  request.getProfileImageURL());
+            String token = userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), request.getProfileImageURL());
 
             UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
                     .recipient(request.getEmail())
@@ -133,7 +140,7 @@ public class UserController {
 
         User data = userService.updateUserProfile(request, id);
         String msg = "";
-        if(!request.getEmail().equals("")) {
+        if (!request.getEmail().equals("")) {
 //            //        TODO: sent verification email
             String token = createValidationEmailToken(id);
             UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
@@ -164,13 +171,37 @@ public class UserController {
     public ResponseEntity<DataResponse> modifiedUserType(@PathVariable int id, @PathVariable int type) {
 
         UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
-        List<GrantedAuthority> authorities  = (List<GrantedAuthority>) auth.getAuthorities();
-        for(GrantedAuthority a: authorities) System.out.println("=>"+a.getAuthority());
+        List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
+        for (GrantedAuthority a : authorities) System.out.println("=>" + a.getAuthority());
         List<String> authorities_string = new ArrayList<>();
-        for(GrantedAuthority a: authorities) authorities_string.add(a.getAuthority());
+        for (GrantedAuthority a : authorities) authorities_string.add(a.getAuthority());
         User data;
         try {
             data = userService.updateUserType(id, type, authorities_string);
+        } catch (InvalidTypeAuthorization e) {
+            DataResponse res = DataResponse.builder()
+                    .message(e.getMessage())
+                    .success(false)
+                    .build();
+            return ResponseEntity.badRequest().body(res);
+        }
+        DataResponse res = DataResponse.builder()
+                .data(data)
+                .build();
+        return ResponseEntity.ok(res);
+    }
+
+    @PatchMapping("/users/{id}/active")
+    public ResponseEntity<DataResponse> updateUserActive(@PathVariable int id) {
+
+        UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+        List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
+        for (GrantedAuthority a : authorities) System.out.println("=>" + a.getAuthority());
+        List<String> authorities_string = new ArrayList<>();
+        for (GrantedAuthority a : authorities) authorities_string.add(a.getAuthority());
+        User data;
+        try {
+            data = userService.updateUserActive(id, authorities_string);
         } catch (InvalidTypeAuthorization e) {
             DataResponse res = DataResponse.builder()
                     .message(e.getMessage())
@@ -248,14 +279,14 @@ public class UserController {
 
 
     @PostMapping("/logout")
-    public ResponseEntity<DataResponse> logout(HttpServletRequest request,HttpServletResponse response) {
-        HttpSession session= request.getSession(false);
+    public ResponseEntity<DataResponse> logout(HttpServletRequest request, HttpServletResponse response) {
+        HttpSession session = request.getSession(false);
         SecurityContextHolder.clearContext();
-        session= request.getSession(false);
-        if(session != null) {
+        session = request.getSession(false);
+        if (session != null) {
             session.invalidate();
         }
-        for(Cookie cookie : request.getCookies()) {
+        for (Cookie cookie : request.getCookies()) {
             cookie.setMaxAge(0);
         }
         return ResponseEntity.ok(DataResponse.builder()
