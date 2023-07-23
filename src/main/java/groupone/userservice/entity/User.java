@@ -46,13 +46,4 @@ public class User {
 
     @Column
     private String validationToken;
-
-    public User(String firstName, String lastName, String email, String password) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.password = password;
-        this.active = true;
-        this.type = UserType.NORMAL_USER_NOT_VALID.ordinal();
-    }
 }

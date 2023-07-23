@@ -1,6 +1,7 @@
 package groupone.userservice.service;
 
 import groupone.userservice.dao.UserDao;
+import groupone.userservice.dto.request.RegisterRequest;
 import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
@@ -113,23 +114,22 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public String addUser(String firstName, String lastName, String email, String password, String profileImageUrl) throws InvalidCredentialsException {
-        if (existsByEmail(email)) {
+    public String addUser(RegisterRequest request) throws InvalidCredentialsException {
+        if (existsByEmail(request.getEmail())) {
             throw new InvalidCredentialsException("Email already exists.");
         }
-        if (profileImageUrl.equals(""))
-            profileImageUrl = "https://bfgroupone.s3.amazonaws.com/1690076947341_default_avatar.png";
         User user = User.builder()
-                .firstName(firstName)
-                .lastName(lastName)
-                .email(email)
-                .password(password)
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(request.getPassword())
                 .dateJoined(new Date(Timestamp.valueOf(LocalDateTime.now()).getTime()))
                 .type(UserType.NORMAL_USER_NOT_VALID.ordinal())
+                .active(true)
                 .build();
 
-        if (profileImageUrl.length() != 0) {
-            user.setProfileImageURL(profileImageUrl);
+        if (request.getProfileImageURL() == null || request.getProfileImageURL().equals("")) {
+            user.setProfileImageURL("https://bfgroupone.s3.amazonaws.com/1690076947341_default_avatar.png");
         }
 
         int userId = userDao.addUser(user);
