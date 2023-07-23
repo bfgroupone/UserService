@@ -124,6 +124,8 @@ public class UserService implements UserDetailsService {
 
         if (request.getProfileImageURL() == null || request.getProfileImageURL().equals("")) {
             user.setProfileImageURL("https://bfgroupone.s3.amazonaws.com/1690076947341_default_avatar.png");
+        } else {
+            user.setProfileImageURL(request.getProfileImageURL());
         }
 
         int userId = userDao.addUser(user);
