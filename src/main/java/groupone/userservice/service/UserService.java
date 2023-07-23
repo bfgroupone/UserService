@@ -49,13 +49,6 @@ public class UserService implements UserDetailsService {
         return users;
     }
 
-    @Transactional
-    public void createUser(User... users) {
-        for (User u : users) {
-            userDao.addUser(u);
-        }
-    }
-
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Optional<User> userOptional = userDao.loadUserByEmail(email);
@@ -118,6 +111,7 @@ public class UserService implements UserDetailsService {
         if (existsByEmail(request.getEmail())) {
             throw new InvalidCredentialsException("Email already exists.");
         }
+
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
@@ -142,20 +136,30 @@ public class UserService implements UserDetailsService {
     @Transactional
     public User updateUserProfile(UserPatchRequest request, int uid) {
         User user = userDao.getUserById(uid);
-        if (!request.getProfileImageURL().isEmpty()) {
-            user.setProfileImageURL(request.getProfileImageURL());
+
+        if (!request.getFirstName().equals("")) {
+            user.setFirstName(request.getFirstName());
         }
+
+        if (!request.getLastName().equals("")) {
+            user.setLastName(request.getLastName());
+        }
+
         if (!request.getEmail().equals("")) {
-            // sending verification code,
-            // user type is invalid
             user.setEmail(request.getEmail());
-            user.setType(3);
-//            System.out.println("email empty");
-            // code to send email for validation
+            user.setType(UserType.NORMAL_USER_NOT_VALID.ordinal());
+            this.createValidationToken(uid);
         }
+
         if (!request.getPassword().equals("")) {
             user.setPassword(request.getPassword());
         }
+
+        if (!request.getProfileImageURL().isEmpty()) {
+            user.setProfileImageURL(request.getProfileImageURL());
+            // TODO: upload profile image to S3
+        }
+
         return user;
     }
 
@@ -171,13 +175,16 @@ public class UserService implements UserDetailsService {
                             normalUser -> invalidUser
         do nothing otherwise
          */
-        if (type == origType) return user;
-        else if (type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal())
+        if (type == origType) {
+            return user;
+        } else if (type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal()) {
             throw new InvalidTypeAuthorization("Do not have authority modifying SUPER ADMIN.");
-        else if (type == UserType.ADMIN.ordinal()) {
-            if (origType == UserType.NORMAL_USER.ordinal() && authorities.contains("promote")) user.setType(type);
-            else
+        } else if (type == UserType.ADMIN.ordinal()) {
+            if (origType == UserType.NORMAL_USER.ordinal() && authorities.contains("promote")) {
+                user.setType(type);
+            } else {
                 throw new InvalidTypeAuthorization("Do not have promote authority or cannot make type" + origType + " an ADMIN.");
+            }
         } else {
             throw new InvalidTypeAuthorization("Invalid type change.");
         }
