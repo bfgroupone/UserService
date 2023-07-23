@@ -108,7 +108,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public boolean existsByEmail(String email){
+    public boolean existsByEmail(String email) {
         return userDao.loadUserByEmail(email).isPresent();
     }
 
@@ -117,7 +117,7 @@ public class UserService implements UserDetailsService {
         if (existsByEmail(email)) {
             throw new InvalidCredentialsException("Email already exists.");
         }
-        if(profileImageUrl.equals(""))
+        if (profileImageUrl.equals(""))
             profileImageUrl = "https://bfgroupone.s3.amazonaws.com/1690076947341_default_avatar.png";
         User user = User.builder()
                 .firstName(firstName)
@@ -175,21 +175,25 @@ public class UserService implements UserDetailsService {
         System.out.println(authorities);
         System.out.println("origin type: " + origType);
         System.out.println("to type: " + type);
-        if(type == origType) return user;
-        else if(type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal()) throw new InvalidTypeAuthorization("Do not have authority modifying SUPER ADMIN.");
-        else if(type == UserType.ADMIN.ordinal() ) {
-            if(origType == UserType.NORMAL_USER.ordinal() && authorities.contains("promote") ) user.setType(type);
-            else throw new InvalidTypeAuthorization("Do not have promote authority or cannot make type" +origType+" an ADMIN.");
-       }  else if(
+        if (type == origType) return user;
+        else if (type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal())
+            throw new InvalidTypeAuthorization("Do not have authority modifying SUPER ADMIN.");
+        else if (type == UserType.ADMIN.ordinal()) {
+            if (origType == UserType.NORMAL_USER.ordinal() && authorities.contains("promote")) user.setType(type);
+            else
+                throw new InvalidTypeAuthorization("Do not have promote authority or cannot make type" + origType + " an ADMIN.");
+        } else if (
                 (type == UserType.NORMAL_USER.ordinal() && origType == UserType.VISITOR_BANNED.ordinal())
-                        || (type == UserType.VISITOR_BANNED.ordinal() && origType == UserType.NORMAL_USER.ordinal())) {
+                        || (type == UserType.VISITOR_BANNED.ordinal() && origType == UserType.NORMAL_USER.ordinal())
+                        || (type == UserType.NORMAL_USER_NOT_VALID.ordinal() && origType == UserType.VISITOR_BANNED.ordinal())
+                        || (type == UserType.VISITOR_BANNED.ordinal() && origType == UserType.NORMAL_USER_NOT_VALID.ordinal())) {
             // unban or ban
-            if(authorities.contains("ban_unban")) user.setType(type);
+            if (authorities.contains("ban_unban")) user.setType(type);
             else throw new InvalidTypeAuthorization("Do not have ban_unban authority.");
         } else {
             throw new InvalidTypeAuthorization("Invalid type change.");
         }
-            return user;
+        return user;
     }
 
     public User getUserById(Integer userId) {
