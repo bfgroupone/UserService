@@ -94,7 +94,7 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request) throws DataIntegrityViolationException, InvalidCredentialsException {
         try {
-            String token = userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view");
+            String token = userService.addUser(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(),  request.getProfileImageURL());
 
             UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
                     .recipient(request.getEmail())

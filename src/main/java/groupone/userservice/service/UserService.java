@@ -117,7 +117,8 @@ public class UserService implements UserDetailsService {
         if (existsByEmail(email)) {
             throw new InvalidCredentialsException("Email already exists.");
         }
-
+        if(profileImageUrl.equals(""))
+            profileImageUrl = "https://bfgroupone.s3.amazonaws.com/1690076947341_default_avatar.png";
         User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
