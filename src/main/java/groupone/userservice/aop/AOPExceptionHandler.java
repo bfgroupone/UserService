@@ -6,6 +6,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -29,5 +30,10 @@ public class AOPExceptionHandler {
     @ExceptionHandler(value = {InvalidCredentialsException.class})
     public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(Exception e) {
         return new ResponseEntity<>(ErrorResponse.builder().message("InvalidCredentialsException: " + e.getMessage()).build(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = {UsernameNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(Exception e) {
+        return new ResponseEntity<>(ErrorResponse.builder().message("UsernameNotFoundException: " + e.getMessage()).build(), HttpStatus.BAD_REQUEST);
     }
 }

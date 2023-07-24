@@ -25,10 +25,10 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping()
@@ -49,13 +49,7 @@ public class UserController {
         this.rabbitTemplate = rabbitTemplate;
     }
     @GetMapping("/users")
-    public ResponseEntity<DataResponse> getAllUsers(HttpServletRequest request) {
-//        System.out.println("http request: ");
-//        Enumeration<String> params = request.getAttributeNames();
-//        while(params.hasMoreElements()){
-//            String paramName = params.nextElement();
-//            System.out.println("Attr Name - "+paramName+", Value - "+request.getAttribute(paramName));
-//        }
+    public ResponseEntity<DataResponse> getAllUsers() {
         List<User> data = userService.getAllUsers();
         DataResponse res = DataResponse.builder()
                 .success(true)
@@ -142,9 +136,7 @@ public class UserController {
         }
 
         User data = userService.updateUserProfile(request, id);
-        String msg = "";
         if (!request.getEmail().equals("")) {
-//            //        TODO: sent verification email
             String token = createValidationEmailToken(id);
             UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
                     .recipient(request.getEmail())
@@ -153,26 +145,22 @@ public class UserController {
                     .build();
 
             String jsonMessage = SerializeUtil.serialize(registrationRequest);
-            msg += jsonMessage;
-            System.out.println(msg);
 
             rabbitTemplate.convertAndSend("x.user-registration", "send-email", jsonMessage);
 
             System.out.println("send....");
-
         }
 
         DataResponse res = DataResponse.builder()
                 .success(true)
                 .data(data)
-                .message(msg)
+                .message("Successfully update user profile")
                 .build();
         return ResponseEntity.ok(res);
     }
 
     @PatchMapping("/users/{id}/{type}")
     public ResponseEntity<DataResponse> modifiedUserType(@PathVariable int id, @PathVariable int type) {
-
         UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
         for (GrantedAuthority a : authorities) System.out.println("=>" + a.getAuthority());
@@ -196,7 +184,6 @@ public class UserController {
 
     @PatchMapping("/users/{id}/active")
     public ResponseEntity<DataResponse> updateUserActive(@PathVariable int id) {
-
         UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
         for (GrantedAuthority a : authorities) System.out.println("=>" + a.getAuthority());
@@ -282,7 +269,7 @@ public class UserController {
 
 
     @PostMapping("/logout")
-    public ResponseEntity<DataResponse> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<DataResponse> logout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         SecurityContextHolder.clearContext();
         session = request.getSession(false);
