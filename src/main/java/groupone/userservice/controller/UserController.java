@@ -144,14 +144,14 @@ public class UserController {
     public ResponseEntity<DataResponse> modifiedUserProfile(@RequestBody UserPatchRequest request, @PathVariable int id) {
         Optional<User> possibleDuplicationEmail = userService.getAllUsers().stream().filter(user -> user.getEmail().equals(request.getEmail())).findAny();
         User user = userService.getUserById(id);
-        if (possibleDuplicationEmail.isPresent() && user.getEmail() != possibleDuplicationEmail.get().getEmail()) {
+        if (possibleDuplicationEmail.isPresent() && !user.getEmail().equals(possibleDuplicationEmail.get().getEmail())) {
             return new ResponseEntity<>(
                     DataResponse.builder()
                             .success(false)
                             .message("This email has already registered, please go to login.")
                             .build(), HttpStatus.OK);}
         User data = userService.updateUserProfile(request, id);
-        if (!request.getEmail().equals("")) {
+        if (!request.getEmail().equals("") && !possibleDuplicationEmail.isPresent()) {
             String token = createValidationEmailToken(id);
             UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
                     .recipient(request.getEmail())
