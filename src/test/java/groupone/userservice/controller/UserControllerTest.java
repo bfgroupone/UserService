@@ -3,6 +3,7 @@ package groupone.userservice.controller;
 
 import com.google.gson.Gson;
 import groupone.userservice.dao.UserDao;
+import groupone.userservice.dto.request.CreateValidationEmailRequest;
 import groupone.userservice.dto.request.LoginRequest;
 import groupone.userservice.dto.request.RegisterRequest;
 import groupone.userservice.dto.request.UserPatchRequest;
@@ -64,6 +65,8 @@ public class UserControllerTest{
 
     @MockBean
     private JwtProvider jwtProvider;
+
+    private String token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJlbWFpbDFAZW1haWwuY29tIiwicGVybWlzc2lvbnMiOlsicmVhZCIsImFkbWluX3JlYWQiLCJkZWxldGUiLCJiYW5fdW5iYW4iLCJyZWNvdmVyIiwicHJvbW90ZSJdLCJ1c2VySWQiOjEsImVtYWlsIjoiZW1haWwxQGVtYWlsLmNvbSIsImFjdGl2ZSI6dHJ1ZSwicm9sZSI6IlNVUEVSX0FETUlOIn0.K-IuHyVud5X-rgs0rch1V5dMgP7WcmHAoz6n6peYv10";
 
     String sDate1="7/12/2014";
     Date date1=new SimpleDateFormat("MM/dd/yyyy").parse(sDate1);
@@ -174,7 +177,7 @@ public class UserControllerTest{
     }
     @Test
     public void test_modifiedUserActive() throws Exception {
-        int userId = 1;
+        int userId = 5;
         boolean active = false;
 
         User modifiedUser = user1;
@@ -189,7 +192,7 @@ public class UserControllerTest{
     }
     @Test
     public void test_modifiedUserType() throws Exception {
-        int userId = 1;
+        int userId = 5;
         int userType = 1;
 
         User modifiedUser = user1;
@@ -215,6 +218,62 @@ public class UserControllerTest{
                 .andExpect(jsonPath("$.data.firstName").value(user.getFirstName()))
                 .andExpect(jsonPath("$.data.lastName").value(user.getLastName()))
                 .andExpect(jsonPath("$.data.email").value(user.getEmail()))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+//    @Test
+//    public void test_deleteUser() throws Exception {
+//        int userId = 5;
+//        User user = user2;
+//        Mockito.doNothing().when(userService.deleteUser(user2));
+//        mockMvc.perform(MockMvcRequestBuilders.delete("/user")
+//                        .param("userId", String.valueOf(userId)))
+//                .andExpect(status().isOk())
+//                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+//                .andExpect(jsonPath("$.message").value("User deleted successfully"))
+//                .andDo(MockMvcResultHandlers.print());
+//
+//    }
+
+
+
+    @Test
+    public void test_logout() throws Exception {
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/logout").header("authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+//                .andExpect(jsonPath("$.message").value("Successfully logout!"))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    public void test_createEmailToken() throws Exception {
+        CreateValidationEmailRequest request = new CreateValidationEmailRequest();
+        request.setUserId(user1.getId());
+        String validationToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZXhwIjoxNjkwMTY3NTAzfQ.HXHqQ2_SFffAh1iz8gRY-54SZSnCPYbcUG8hWGM6ZA0";
+        Mockito.when(userService.createValidationToken(anyInt())).thenReturn(validationToken);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new Gson().toJson(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("New validation email sent"))
+                .andExpect(jsonPath("$.data").value(validationToken))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    public void test_validateEmailToken() throws Exception {
+        String token = "mockToken";
+        Mockito.when(userService.validateEmailToken(any(String.class), any(boolean.class))).thenReturn(true);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/validate")
+                        .param("token", token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Token valid: true"))
                 .andDo(MockMvcResultHandlers.print());
     }
 }
