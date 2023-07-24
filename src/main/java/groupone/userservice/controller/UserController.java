@@ -225,32 +225,24 @@ public class UserController {
         }
     }
 
-    @DeleteMapping("/user")
-    public ResponseEntity<DataResponse> deleteUser(@RequestParam("userId") Integer userId) throws InvalidCredentialsException {
-        LoginUserAuthentication auth = (LoginUserAuthentication) SecurityContextHolder.getContext().getAuthentication();
-        List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
-
-        if (!auth.getAuthorities().contains("admin_read")) {
-            throw new InvalidCredentialsException("No permission to check other users' profile");
-        }
-
-        User existingUser = userService.getUserById(userId);
-        if (existingUser == null) {
-            DataResponse response = DataResponse.builder()
-                    .success(false)
-                    .message("User not found")
-                    .build();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
-
-        userService.deleteUser(existingUser);
-        DataResponse response = DataResponse.builder()
-                .success(true)
-                .message("User deleted successfully")
-                .build();
-        return ResponseEntity.ok(response);
-    }
-
+//    @DeleteMapping("/user")
+//    public ResponseEntity<DataResponse> deleteUser(@RequestParam("userId") Integer userId) {
+//        User existingUser = userService.getUserById(userId);
+//        if (existingUser == null) {
+//            DataResponse response = DataResponse.builder()
+//                    .success(false)
+//                    .message("User not found")
+//                    .build();
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+//        }
+//
+//        userService.deleteUser(existingUser);
+//        DataResponse response = DataResponse.builder()
+//                .success(true)
+//                .message("User deleted successfully")
+//                .build();
+//        return ResponseEntity.ok(response);
+//    }
 
     @PostMapping("/validate")
     public ResponseEntity<DataResponse> createValidationEmailToken(@RequestBody CreateValidationEmailRequest request) {
