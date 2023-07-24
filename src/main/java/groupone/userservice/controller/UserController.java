@@ -6,6 +6,7 @@ import groupone.userservice.entity.User;
 import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
 import groupone.userservice.security.JwtProvider;
+import groupone.userservice.security.LoginUserAuthentication;
 import groupone.userservice.service.UserService;
 import groupone.userservice.util.SerializeUtil;
 import org.apache.http.auth.InvalidCredentialsException;
@@ -26,7 +27,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,6 +48,7 @@ public class UserController {
         this.jwtProvider = jwtProvider;
         this.rabbitTemplate = rabbitTemplate;
     }
+
     @GetMapping("/users")
     public ResponseEntity<DataResponse> getAllUsers() {
         List<User> data = userService.getAllUsers();
@@ -159,16 +160,11 @@ public class UserController {
         return ResponseEntity.ok(res);
     }
 
-    @PatchMapping("/users/{id}/{type}")
-    public ResponseEntity<DataResponse> modifiedUserType(@PathVariable int id, @PathVariable int type) {
-        UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
-        List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
-        for (GrantedAuthority a : authorities) System.out.println("=>" + a.getAuthority());
-        List<String> authorities_string = new ArrayList<>();
-        for (GrantedAuthority a : authorities) authorities_string.add(a.getAuthority());
+    @PatchMapping("/users/{id}/promote")
+    public ResponseEntity<DataResponse> promoteUser(@PathVariable int id) {
         User data;
         try {
-            data = userService.updateUserType(id, type, authorities_string);
+            data = userService.promoteUser(id);
         } catch (InvalidTypeAuthorization e) {
             DataResponse res = DataResponse.builder()
                     .message(e.getMessage())
@@ -177,6 +173,8 @@ public class UserController {
             return ResponseEntity.badRequest().body(res);
         }
         DataResponse res = DataResponse.builder()
+                .success(true)
+                .message("Successfully promote user with ID: " + id)
                 .data(data)
                 .build();
         return ResponseEntity.ok(res);
@@ -184,14 +182,9 @@ public class UserController {
 
     @PatchMapping("/users/{id}/active")
     public ResponseEntity<DataResponse> updateUserActive(@PathVariable int id) {
-        UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
-        List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
-        for (GrantedAuthority a : authorities) System.out.println("=>" + a.getAuthority());
-        List<String> authorities_string = new ArrayList<>();
-        for (GrantedAuthority a : authorities) authorities_string.add(a.getAuthority());
         User data;
         try {
-            data = userService.updateUserActive(id, authorities_string);
+            data = userService.updateUserActive(id);
         } catch (InvalidTypeAuthorization e) {
             DataResponse res = DataResponse.builder()
                     .message(e.getMessage())
@@ -200,26 +193,36 @@ public class UserController {
             return ResponseEntity.badRequest().body(res);
         }
         DataResponse res = DataResponse.builder()
+                .success(true)
+                .message("Successfully ban/unban user with ID: " + id)
                 .data(data)
                 .build();
         return ResponseEntity.ok(res);
     }
 
     @GetMapping("/user")
-    public ResponseEntity<DataResponse> getUserById(@RequestParam("userId") Integer userId) {
-        User user = userService.getUserById(userId);
-        if (user == null) {
-            DataResponse response = DataResponse.builder()
-                    .success(false)
-                    .message("User not found")
-                    .build();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    public ResponseEntity<DataResponse> getUserById(@RequestParam("userId") Integer userId) throws InvalidCredentialsException {
+        LoginUserAuthentication auth = (LoginUserAuthentication) SecurityContextHolder.getContext().getAuthentication();
+        List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
+
+        if (auth.getUserID() == userId || authorities.contains("admin_read")) {
+            User user = userService.getUserById(userId);
+            if (user == null) {
+                DataResponse response = DataResponse.builder()
+                        .success(false)
+                        .message("User not found")
+                        .build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+            return ResponseEntity.ok(DataResponse.builder()
+                    .success(true)
+                    .message("Get user by id Success")
+                    .data(user)
+                    .build());
+        } else {
+            throw new InvalidCredentialsException("No permission to check other users' profile");
         }
-        return ResponseEntity.ok(DataResponse.builder()
-                .success(true)
-                .message("Get user by id Success")
-                .data(user)
-                .build());
     }
 
 //    @DeleteMapping("/user")
@@ -240,7 +243,6 @@ public class UserController {
 //                .build();
 //        return ResponseEntity.ok(response);
 //    }
-
 
     @PostMapping("/validate")
     public ResponseEntity<DataResponse> createValidationEmailToken(@RequestBody CreateValidationEmailRequest request) {
