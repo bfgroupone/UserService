@@ -42,9 +42,9 @@ import java.util.*;
 
 import static javax.swing.UIManager.put;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -97,8 +97,8 @@ public class UserControllerTest{
         Date date1=new SimpleDateFormat("MM/dd/yyyy").parse(sDate1);
         String sDate2="4/21/2014";
         Date date2=new SimpleDateFormat("MM/dd/yyyy").parse(sDate2);
-        expectedUsers.add(new User(1,"john@example.com","John","Doe","123", date1, 1, "https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZXhwIjoxNjg5ODkyMjc0fQ.bMc7kDmKL92H3DJleE7G7u9v0Y98KLDk4qPjPEbZdoo"));
-        expectedUsers.add(new User(2,"jane@example.com","Jane","Smith","123", date2,2,"url-new","eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwiZXhwIjoxNjkwMDU3MzcwfQ.mWBG0g25cfv9K-rn-XuScThmUx4KEU04323-6kaZDZI"));
+        expectedUsers.add(new User(1,"john@example.com","John","Doe","123", date1, true, 1,"https://drive.google.com/file/d/1Ul78obBTS0zgaVOufCHpUKwMxBvDON-i/view", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZXhwIjoxNjg5ODkyMjc0fQ.bMc7kDmKL92H3DJleE7G7u9v0Y98KLDk4qPjPEbZdoo"));
+        expectedUsers.add(new User(2,"jane@example.com","Jane","Smith","123", date2, true,2,"url-new","eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzIiwiZXhwIjoxNjkwMDU3MzcwfQ.mWBG0g25cfv9K-rn-XuScThmUx4KEU04323-6kaZDZI"));
         System.out.println(expectedUsers.size());
         Mockito.when(userService.getAllUsers()).thenReturn(expectedUsers);
 //        Mockito.doReturn(expectedUsers).when(userService.getAllUsers());
@@ -123,7 +123,19 @@ public class UserControllerTest{
     @Test
     public void test_Register() throws Exception{
         RegisterRequest request = new RegisterRequest("firstname", "lastname", "email@test.com", "password", "");
-        User newUser - new User(request.getFirstName(), request.getLastName(), request.getEmail(), request.getPassword(), request.getProfileImageURL());
+        String validToken ="eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMCIsImV4cCI6MTY4OTgzOTM5MH0.tw706SlQBnriZgLmTCkAh2t_c4WNooUhXjYOEL2_vNw";
+
+        Mockito.when(userService.addUser(any(RegisterRequest.class))).thenReturn(validToken);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new Gson().toJson(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Registered, please log in with your new account"));
     }
+
+    
 
 }
