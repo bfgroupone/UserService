@@ -151,7 +151,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public User updateUserProfile(UserPatchRequest request, int uid) {
-        User user = getUserById(uid);
+        User user = userDao.getUserById(uid);
 
         if (!request.getFirstName().equals("")) {
             user.setFirstName(request.getFirstName());

@@ -2,6 +2,7 @@ package groupone.userservice.service;
 
 import groupone.userservice.dao.UserDao;
 import groupone.userservice.dto.request.RegisterRequest;
+import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
 import org.apache.http.auth.InvalidCredentialsException;
@@ -175,12 +176,45 @@ public class UserServiceTest {
     public void test_addUser_Success() throws InvalidCredentialsException {
         RegisterRequest request = new RegisterRequest("John", "Doe", "john@example.com", "123", "url");
 
-        // Set other fields if needed...
 
         Mockito.when(userDao.loadUserByEmail(request.getEmail())).thenReturn(Optional.empty());
         Mockito.when(userDao.addUser(any(User.class))).thenReturn(1); // Return the user ID for testing purposes
 
         assertEquals(1, userService.addUser(request));
-        // Additional assertions can be added here to check the user object's properties and token validity
+
+    }
+
+    @Test
+    public void test_addUser_exist(){
+        RegisterRequest request = new RegisterRequest("John", "Doe", "john@example.com", "123", "url");
+
+
+        Mockito.when(userDao.loadUserByEmail(request.getEmail())).thenReturn(Optional.of(new User()));
+
+        assertThrows(InvalidCredentialsException.class, () -> userService.addUser(request));
+
+    }
+
+    @Test
+    public void testUpdateUserProfile_Success() {
+        int userId = 1;
+        UserPatchRequest request = new UserPatchRequest();
+        request.setFirstName("John");
+        request.setLastName("Doe");
+        request.setEmail("john.doe@example.com");
+        request.setPassword("newpassword");
+        request.setProfileImageURL("https://example.com/profile.jpg");
+
+
+        Mockito.when(userDao.getUserById(userId)).thenReturn(user1);
+
+        User updatedUser = userService.updateUserProfile(request, userId);
+
+        assertEquals(request.getFirstName(), updatedUser.getFirstName());
+        assertEquals(request.getLastName(), updatedUser.getLastName());
+        assertEquals(request.getEmail(), updatedUser.getEmail());
+        assertEquals(request.getPassword(), updatedUser.getPassword());
+        assertEquals(request.getProfileImageURL(), updatedUser.getProfileImageURL());
+        // Additional assertions based on the specific behavior of updateUserProfile
     }
 }
