@@ -32,8 +32,6 @@ import java.util.Optional;
 
 @Service
 public class UserService implements UserDetailsService {
-    @Value("${email.validation.token.key}")
-    private String validationEmailKey;
 
     private UserDao userDao;
 
@@ -221,15 +219,10 @@ public class UserService implements UserDetailsService {
 
 
     @Transactional
-    public String createValidationToken(int userId) {
-        User user = getUserById(userId);
+    public String createValidationToken(User user, String key) {
+        int userId = user.getId();
 
-        String token = user.getValidationToken();
-
-        // If current token is valid, reuse it
-        if (validateEmailToken(token, true)) {
-            return token;
-        }
+        String token;
 
         // Calculate the expiration time (3 hours from now)
         long expirationTimeMillis = System.currentTimeMillis() + 3 * 60 * 60 * 1000; // 3 hours in milliseconds
@@ -237,37 +230,26 @@ public class UserService implements UserDetailsService {
         token = Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .setExpiration(expirationDate)
-                .signWith(SignatureAlgorithm.HS256, validationEmailKey)
+                .signWith(SignatureAlgorithm.HS256, key)
                 .compact();
         user.setValidationToken(token);
         return token;
     }
 
     @Transactional
-    public boolean validateEmailToken(String token, boolean checkOnly) {
+    public boolean validateEmailToken(String token, boolean checkOnly, String key) {
         try {
-            Jws<Claims> claimsJws = Jwts.parser().setSigningKey(validationEmailKey).parseClaimsJws(token);
-
-            Date expirationDate = claimsJws.getBody().getExpiration();
-            if (isJwtTokenValid(expirationDate)) {
-                if (checkOnly) {
-                    return true;
-                }
-                int userId = Integer.parseInt(claimsJws.getBody().getSubject());
-                User user = getUserById(userId);
-                user.setType(UserType.NORMAL_USER.ordinal());
+            Jws<Claims> claimsJws = Jwts.parser().setSigningKey(key).parseClaimsJws(token);
+            if (checkOnly) {
                 return true;
-            } else {
-                return false;
             }
+            int userId = Integer.parseInt(claimsJws.getBody().getSubject());
+            User user = userDao.getUserById(userId);
+            user.setType(UserType.NORMAL_USER.ordinal());
+            return true;
         } catch (Exception e) {
+            System.out.println(e);
             return false;
         }
-    }
-
-    private boolean isJwtTokenValid(Date expirationDate) {
-        Date currentDate = new Date();
-
-        return !currentDate.after(expirationDate);
     }
 }

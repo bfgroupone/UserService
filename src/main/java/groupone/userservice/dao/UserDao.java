@@ -3,6 +3,7 @@ package groupone.userservice.dao;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
 import groupone.userservice.exception.InvalidTypeAuthorization;
+import org.hibernate.SessionFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
@@ -14,6 +15,9 @@ public class UserDao extends AbstractHibernateDao<User> {
 
     public UserDao() {
         setClazz(User.class);
+    }
+    void setSessionFactory(SessionFactory sessionFactory){
+        this.sessionFactory = sessionFactory;
     }
 
 //    public void setUserActive(User user, boolean isActive) {

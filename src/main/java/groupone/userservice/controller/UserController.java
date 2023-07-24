@@ -12,6 +12,7 @@ import groupone.userservice.util.SerializeUtil;
 import org.apache.http.auth.InvalidCredentialsException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +42,8 @@ public class UserController {
 
     private JwtProvider jwtProvider;
     private RabbitTemplate rabbitTemplate;
+    @Value("${email.validation.token.key}")
+    private String validationEmailKey;
 
     @Autowired
     public UserController(UserService userService, AuthenticationManager authenticationManager, JwtProvider jwtProvider, RabbitTemplate rabbitTemplate) {
@@ -100,7 +103,16 @@ public class UserController {
     public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request) throws DataIntegrityViolationException, InvalidCredentialsException {
         try {
             int userId = userService.addUser(request);
-            String token = userService.createValidationToken(userId);
+            User user = userService.getUserById(userId);
+            String token = user.getValidationToken();
+            if(token != "") {
+                boolean tokenValid = userService.validateEmailToken(user.getValidationToken(), true, validationEmailKey);
+                if (!tokenValid) {
+                    token = userService.createValidationToken(user, validationEmailKey);
+                }
+            } else{
+                token = userService.createValidationToken(user, validationEmailKey);
+            }
 
 
             UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
@@ -129,8 +141,10 @@ public class UserController {
 
     @PatchMapping("/users/{id}")
     public ResponseEntity<DataResponse> modifiedUserProfile(@RequestBody UserPatchRequest request, @PathVariable int id) {
+
         Optional<User> possibleDuplicationEmail = userService.getAllUsers().stream().filter(user -> user.getEmail().equals(request.getEmail())).findAny();
-        if (possibleDuplicationEmail.isPresent()) {
+        User user = userService.getUserById(id);
+        if (possibleDuplicationEmail.isPresent() && user.getEmail() != possibleDuplicationEmail.get().getEmail()) {
             return new ResponseEntity<>(
                     DataResponse.builder()
                             .success(false)
@@ -180,6 +194,8 @@ public class UserController {
             return ResponseEntity.badRequest().body(res);
         }
         DataResponse res = DataResponse.builder()
+                .success(true)
+                .message("User type modified")
                 .data(data)
                 .build();
         return ResponseEntity.ok(res);
@@ -271,12 +287,23 @@ public class UserController {
     }
 
     private String createValidationEmailToken(int userId) {
-        return userService.createValidationToken(userId);
+        User user = userService.getUserById(userId);
+        String token = user.getValidationToken();
+        if(token != "") {
+            boolean tokenValid = userService.validateEmailToken(user.getValidationToken(), true, validationEmailKey);
+            if (tokenValid) {
+                return token;
+            } else {
+                return userService.createValidationToken(user, validationEmailKey);
+            }
+        }
+        return userService.createValidationToken(user,validationEmailKey);
+
     }
 
     @GetMapping("/validate")
     public ResponseEntity<DataResponse> validateEmailToken(@RequestParam("token") String token) {
-        boolean isValid = userService.validateEmailToken(token, false);
+        boolean isValid = userService.validateEmailToken(token, false, validationEmailKey);
 
         return ResponseEntity.ok(DataResponse.builder()
                 .success(true)

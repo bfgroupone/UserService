@@ -30,7 +30,7 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         if (request.getRequestURI().equals("/user-service/register")
                 || request.getRequestURI().equals("/user-service/login")
-                || (request.getRequestURI().equals("/user-service/validate") && request.getMethod().equals("GET"))) {
+                || (request.getRequestURI().equals("/user-service/validate"))) {
             filterChain.doFilter(request, response);
             return;
         }

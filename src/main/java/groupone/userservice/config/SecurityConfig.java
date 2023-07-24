@@ -68,6 +68,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/user-service/login").permitAll()
                 .antMatchers("/user-service/register").permitAll()
                 .antMatchers(HttpMethod.GET, "/user-service/validate").permitAll()
+                .antMatchers(HttpMethod.POST, "/user-service/validate").permitAll()
 //                .antMatchers("/user-service/users/*").permitAll()
                 .antMatchers("/user-service/users").hasAuthority("admin_read")
                 .antMatchers(HttpMethod.PATCH, "/user-service/users/*/active").hasAnyAuthority("ban_unban")

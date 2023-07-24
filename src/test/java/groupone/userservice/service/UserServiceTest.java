@@ -6,18 +6,23 @@ import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
 import groupone.userservice.exception.InvalidTypeAuthorization;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.http.auth.InvalidCredentialsException;
+import org.junit.Before;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 
 
 import java.text.ParseException;
@@ -31,12 +36,16 @@ import static org.mockito.ArgumentMatchers.anyInt;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
+    @Value("${email.validation.token.key}")
+    private String validationEmailKey;
+
 
     @Mock
     private UserDao userDao;
 
     @InjectMocks
     private UserService userService;
+
     String sDate1="7/12/2014";
     Date date1=new SimpleDateFormat("MM/dd/yyyy").parse(sDate1);
     String sDate2="4/21/2014";
@@ -67,6 +76,15 @@ public class UserServiceTest {
         User actualUser = userService.getUserById(userId);
 
         assertEquals(user, actualUser);
+    }
+
+    @Test
+    public void test_getUserById_empty() {
+        Integer userId = 1;
+        Mockito.when(userDao.getUserById(userId)).thenReturn(null);
+
+
+        assertThrows(UsernameNotFoundException.class, () -> userService.getUserById(userId));
     }
 
     @Test
@@ -181,7 +199,16 @@ public class UserServiceTest {
         assertEquals(1, userService.addUser(request));
 
     }
+    @Test
+    public void test_addUser_Success_EmptyImgUrl() throws InvalidCredentialsException {
+        RegisterRequest request = new RegisterRequest("John", "Doe", "john@example.com", "123", null);
 
+        Mockito.when(userDao.loadUserByEmail(request.getEmail())).thenReturn(Optional.empty());
+        Mockito.when(userDao.addUser(any(User.class))).thenReturn(1); // Return the user ID for testing purposes
+
+        assertEquals(1, userService.addUser(request));
+
+    }
     @Test
     public void test_addUser_exist(){
         RegisterRequest request = new RegisterRequest("John", "Doe", "john@example.com", "123", "url");
@@ -214,7 +241,22 @@ public class UserServiceTest {
         assertEquals(request.getPassword(), updatedUser.getPassword());
         assertEquals(request.getProfileImageURL(), updatedUser.getProfileImageURL());
     }
+    @Test
+    public void testUpdateUserType_SameType() throws InvalidTypeAuthorization {
+        int userId = 1;
+        int newType = UserType.NORMAL_USER.ordinal();
+        List<String> authorities = new ArrayList<>();
+        authorities.add("promote");
 
+        User existingUser = user1;
+        existingUser.setType(UserType.NORMAL_USER.ordinal());
+
+        Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
+
+        User updatedUser = userService.updateUserType(userId, newType, authorities);
+
+        assertEquals(newType, updatedUser.getType());
+    }
     @Test
     public void testUpdateUserType_NormalUserPromote_Success() throws InvalidTypeAuthorization {
         int userId = 1;
@@ -231,7 +273,35 @@ public class UserServiceTest {
 
         assertEquals(newType, updatedUser.getType());
     }
+    @Test
+    public void testUpdateUserType_SuperAdminPromote_Fail() throws InvalidTypeAuthorization {
+        int userId = 1;
+        int newType = UserType.ADMIN.ordinal();
+        List<String> authorities = new ArrayList<>();
+        authorities.add("promote");
 
+        User existingUser = user1;
+        existingUser.setType(UserType.SUPER_ADMIN.ordinal());
+
+        Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
+
+        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserType(userId, newType, authorities));
+    }
+
+    @Test
+    public void testUpdateUserType_invalidUserPromote_fail() throws InvalidTypeAuthorization {
+        int userId = 1;
+        int newType = UserType.NORMAL_USER_NOT_VALID.ordinal();
+        List<String> authorities = new ArrayList<>();
+        authorities.add("promote");
+
+        User existingUser = user1;
+        existingUser.setType(UserType.NORMAL_USER.ordinal());
+
+        Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
+
+        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserType(userId, newType, authorities));
+    }
     @Test
     public void testUpdateUserType_NormalUserPromote_NoPromoteAuthority() throws InvalidTypeAuthorization {
         int userId = 1;
@@ -251,15 +321,121 @@ public class UserServiceTest {
         // Create a user with UserType.NORMAL_USER
         User user = user1;
         user.setType(UserType.NORMAL_USER.ordinal());
-        user.setActive(true);
-
+        boolean userstate = true;
+        user.setActive(userstate);
+        List<String> authorities = new ArrayList<>();
+        authorities.add("ban_unban");
         // Set up the userDao mock
         Mockito.when(userDao.getUserById(1)).thenReturn(user);
 
         // Call the updateUserActive method
-        User updatedUser = userService.updateUserActive(1, Collections.singletonList("ban_unban"));
+        User updatedUser = userService.updateUserActive(1, authorities);
 
         // Assert that the user's active status is toggled (from true to false or vice versa)
-        assertNotEquals(user.isActive(), updatedUser.isActive());
+        assertNotEquals(userstate, updatedUser.isActive());
     }
+
+    @Test
+    public void test_updateUserActive_NoAuth() throws InvalidTypeAuthorization {
+        // Create a user with UserType.NORMAL_USER
+        User user = user1;
+        user.setType(UserType.NORMAL_USER.ordinal());
+        boolean userstate = true;
+        user.setActive(userstate);
+        List<String> authorities = new ArrayList<>();
+        // Set up the userDao mock
+        Mockito.when(userDao.getUserById(1)).thenReturn(user);
+
+        // Call the updateUserActive method
+        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserActive(1, authorities));
+    }
+    @Test
+    public void test_updateUserActive_CanNotBanAdmin() throws InvalidTypeAuthorization {
+        // Create a user with UserType.NORMAL_USER
+        User user = user1;
+        user.setType(UserType.ADMIN.ordinal());
+        boolean userstate = true;
+        user.setActive(userstate);
+        List<String> authorities = new ArrayList<>();
+        authorities.add("ban_unban");
+        // Set up the userDao mock
+        Mockito.when(userDao.getUserById(1)).thenReturn(user);
+
+        // Assert that the user's active status is toggled (from true to false or vice versa)
+        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserActive(1, authorities));
+    }
+    @Test
+    public void test_createValidationToken_Success() {
+        int userId = 1;
+
+        // Create a user with the given userId
+        User user = user1;
+        user.setId(userId);
+
+        String token = userService.createValidationToken(user, "grouponeEmail");
+        assertNotNull(token);
+    }
+
+    @Test
+    public void test_validateEmailToken_Success() {
+        // Generate a valid JWT token
+        int userId = 5;
+        User user = user1;
+        user.setType(UserType.NORMAL_USER_NOT_VALID.ordinal());
+        String token = Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .setExpiration(new Date(System.currentTimeMillis() + 100000000)) // Set an expiration time in the future
+                .signWith(SignatureAlgorithm.HS256, "grouponeEmail")
+                .compact();
+        Mockito.when(userDao.getUserById(userId)).thenReturn(user);
+
+        boolean isValid = userService.validateEmailToken(token, false, "grouponeEmail");
+        assertEquals(user.getType(), UserType.NORMAL_USER.ordinal());
+
+        assertTrue(isValid);
+    }
+    @Test
+    public void test_validateEmailToken_Success_checkTrue() {
+        // Generate a valid JWT token
+        int userId = 5;
+        String token = Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .setExpiration(new Date(System.currentTimeMillis() + 100000000)) // Set an expiration time in the future
+                .signWith(SignatureAlgorithm.HS256, "grouponeEmail")
+                .compact();
+
+        boolean isValid = userService.validateEmailToken(token, true, "grouponeEmail");
+        assertTrue(isValid);
+    }
+    @Test
+    public void test_validateEmailToken_fail() {
+        // Generate a valid JWT token
+        int userId = 5;
+        String token = Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .setExpiration(new Date(System.currentTimeMillis() + 10000)) // Set an expiration time in the past
+                .signWith(SignatureAlgorithm.HS256, "grouponeEmail")
+                .compact();
+        boolean isValid = userService.validateEmailToken(token, true, "grouponeEma");
+        assertFalse(isValid);
+    }
+
+
+    @Test
+    public void test_validateEmailToken_exception() {
+        // Generate a valid JWT token
+        int userId = 5;
+        User user = user1;
+        user.setType(UserType.NORMAL_USER_NOT_VALID.ordinal());
+        String token = Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .setExpiration(new Date(System.currentTimeMillis() + 100000000)) // Set an expiration time in the future
+                .signWith(SignatureAlgorithm.HS256, "grouponeEmail")
+                .compact();
+
+        boolean isValid = userService.validateEmailToken(token, false, null);
+
+        assertFalse(isValid);
+    }
+
 }
