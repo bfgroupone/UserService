@@ -179,27 +179,39 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public User promoteUser(int uid) throws InvalidTypeAuthorization {
+    public User updateUserType(int uid, int type, List<String> authorities) throws InvalidTypeAuthorization {
         User user = getUserById(uid);
 
         int origType = user.getType();
 
-        if (origType != UserType.NORMAL_USER.ordinal()) {
-            throw new InvalidTypeAuthorization("Can only promote normal users");
+        if (type == origType) {
+            return user;
+        } else if (type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal()) {
+            throw new InvalidTypeAuthorization("Do not have authority modifying SUPER ADMIN.");
+        } else if (type == UserType.ADMIN.ordinal()) {
+            if (origType == UserType.NORMAL_USER.ordinal() && authorities.contains("promote")) {
+                user.setType(type);
+            } else {
+                throw new InvalidTypeAuthorization("Do not have promote authority or cannot make type" + origType + " an ADMIN.");
+            }
+        } else {
+            throw new InvalidTypeAuthorization("Invalid type change.");
         }
-
-        user.setType(UserType.ADMIN.ordinal());
         return user;
     }
 
     @Transactional
-    public User updateUserActive(int uid) throws InvalidTypeAuthorization {
+    public User updateUserActive(int uid, List<String> authorities) throws InvalidTypeAuthorization {
         User user = getUserById(uid);
 
         int origType = user.getType();
 
         if (origType == UserType.SUPER_ADMIN.ordinal() || origType == UserType.ADMIN.ordinal()) {
-            throw new InvalidTypeAuthorization("Can not ban user type: " + UserType.getLabelFromOrdinal(origType));
+            throw new InvalidTypeAuthorization("Can not ban user type: " + origType);
+        }
+
+        if (!authorities.contains("ban_unban")) {
+            throw new InvalidTypeAuthorization("Current user cannot ban/unban other users");
         }
 
         user.setActive(!user.isActive());
