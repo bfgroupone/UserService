@@ -205,7 +205,7 @@ public class UserController {
         LoginUserAuthentication auth = (LoginUserAuthentication) SecurityContextHolder.getContext().getAuthentication();
         List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
 
-        if (auth.getUserID() == userId || authorities.contains("admin_read")) {
+        if (auth.getUserID() == userId || authorities.toString().contains("admin_read")) {
             User user = userService.getUserById(userId);
             if (user == null) {
                 DataResponse response = DataResponse.builder()
