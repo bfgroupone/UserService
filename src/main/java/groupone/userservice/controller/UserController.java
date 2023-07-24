@@ -6,6 +6,7 @@ import groupone.userservice.entity.User;
 import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
 import groupone.userservice.security.JwtProvider;
+import groupone.userservice.security.LoginUserAuthentication;
 import groupone.userservice.service.UserService;
 import groupone.userservice.util.SerializeUtil;
 import org.apache.http.auth.InvalidCredentialsException;
@@ -208,7 +209,6 @@ public class UserController {
     }
 
     @GetMapping("/user")
-
     public ResponseEntity<DataResponse> getUserById(@RequestParam("userId") Integer userId) throws InvalidCredentialsException {
         LoginUserAuthentication auth = (LoginUserAuthentication) SecurityContextHolder.getContext().getAuthentication();
         List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
@@ -232,11 +232,11 @@ public class UserController {
             throw new InvalidCredentialsException("No permission to check other users' profile");
 
         }
-        return ResponseEntity.ok(DataResponse.builder()
-                .success(true)
-                .message("Get user by id Success")
-                .data(user)
-                .build());
+//        return ResponseEntity.ok(DataResponse.builder()
+//                .success(true)
+//                .message("Get user by id Success")
+//                .data(user)
+//                .build());
     }
 
 //    @DeleteMapping("/user")
