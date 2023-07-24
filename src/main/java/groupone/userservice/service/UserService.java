@@ -49,6 +49,20 @@ public class UserService implements UserDetailsService {
         return users;
     }
 
+    @Transactional
+    public void deleteUser(User user) {
+        userDao.deleteUser(user);
+    }
+
+    public User getUserById(Integer userId) {
+        User user = userDao.getUserById(userId);
+        if (user == null) {
+            throw new UsernameNotFoundException("Cannot find user with uid: " + userId);
+        }
+
+        return user;
+    }
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Optional<User> userOptional = userDao.loadUserByEmail(email);
@@ -137,7 +151,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public User updateUserProfile(UserPatchRequest request, int uid) {
-        User user = userDao.getUserById(uid);
+        User user = getUserById(uid);
 
         if (!request.getFirstName().equals("")) {
             user.setFirstName(request.getFirstName());
@@ -150,7 +164,6 @@ public class UserService implements UserDetailsService {
         if (!request.getEmail().equals("")) {
             user.setEmail(request.getEmail());
             user.setType(UserType.NORMAL_USER_NOT_VALID.ordinal());
-            this.createValidationToken(uid);
         }
 
         if (!request.getPassword().equals("")) {
@@ -167,16 +180,10 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public User updateUserType(int uid, int type, List<String> authorities) throws InvalidTypeAuthorization {
-        User user = userDao.getUserById(uid);
+        User user = getUserById(uid);
+
         int origType = user.getType();
-        /*
-        ignore if newType is same with originalType
-        cannot modify super admin(cannot ban)
-        need "promote" to modify normal-> admin
-        need "ban_unban" to invalidUser -> normalUser
-                            normalUser -> invalidUser
-        do nothing otherwise
-         */
+
         if (type == origType) {
             return user;
         } else if (type == UserType.SUPER_ADMIN.ordinal() || origType == UserType.SUPER_ADMIN.ordinal()) {
@@ -195,7 +202,8 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public User updateUserActive(int uid, List<String> authorities) throws InvalidTypeAuthorization {
-        User user = userDao.getUserById(uid);
+        User user = getUserById(uid);
+
         int origType = user.getType();
 
         if (origType == UserType.SUPER_ADMIN.ordinal() || origType == UserType.ADMIN.ordinal()) {
@@ -211,18 +219,10 @@ public class UserService implements UserDetailsService {
         return user;
     }
 
-    public User getUserById(Integer userId) {
-        return userDao.getUserById(userId);
-    }
-
-    @Transactional
-    public void deleteUser(User user) {
-        userDao.deleteUser(user);
-    }
 
     @Transactional
     public String createValidationToken(int userId) {
-        User user = userDao.getUserById(userId);
+        User user = getUserById(userId);
 
         String token = user.getValidationToken();
 
@@ -254,7 +254,7 @@ public class UserService implements UserDetailsService {
                     return true;
                 }
                 int userId = Integer.parseInt(claimsJws.getBody().getSubject());
-                User user = userDao.getUserById(userId);
+                User user = getUserById(userId);
                 user.setType(UserType.NORMAL_USER.ordinal());
                 return true;
             } else {
