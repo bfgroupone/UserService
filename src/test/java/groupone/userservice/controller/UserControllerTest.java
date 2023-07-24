@@ -2,54 +2,35 @@ package groupone.userservice.controller;
 
 
 import com.google.gson.Gson;
-import groupone.userservice.dao.UserDao;
 import groupone.userservice.dto.request.CreateValidationEmailRequest;
 import groupone.userservice.dto.request.LoginRequest;
 import groupone.userservice.dto.request.RegisterRequest;
 import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.dto.response.DataResponse;
 import groupone.userservice.entity.User;
-import groupone.userservice.security.JwtFilter;
 import groupone.userservice.security.JwtProvider;
 import groupone.userservice.service.UserService;
 
-import io.vavr.collection.Multimap;
-import org.junit.Before;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.junit.jupiter.api.DisplayName;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static javax.swing.UIManager.put;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = UserController.class)
@@ -139,10 +120,10 @@ public class UserControllerTest{
     @Test
     public void test_register() throws Exception{
         RegisterRequest request = new RegisterRequest("firstname", "lastname", "email@test.com", "password", "");
-        String validToken ="eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMCIsImV4cCI6MTY4OTgzOTM5MH0.tw706SlQBnriZgLmTCkAh2t_c4WNooUhXjYOEL2_vNw";
-
-        Mockito.when(userService.addUser(any(RegisterRequest.class))).thenReturn(validToken);
-
+        String validToken ="testToken";
+        int uid = 1;
+        Mockito.when(userService.addUser(any(RegisterRequest.class))).thenReturn(uid);
+        Mockito.when(userService.createValidationToken(uid)).thenReturn(validToken);
         mockMvc.perform(MockMvcRequestBuilders.post("/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new Gson().toJson(request)))

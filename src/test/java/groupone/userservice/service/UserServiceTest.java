@@ -7,11 +7,9 @@ import groupone.userservice.entity.UserType;
 import org.apache.http.auth.InvalidCredentialsException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -30,7 +28,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.lenient;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -181,11 +178,9 @@ public class UserServiceTest {
         // Set other fields if needed...
 
         Mockito.when(userDao.loadUserByEmail(request.getEmail())).thenReturn(Optional.empty());
-        Mockito.when(userDao.getUserById(anyInt())).thenReturn(user1);
         Mockito.when(userDao.addUser(any(User.class))).thenReturn(1); // Return the user ID for testing purposes
 
-        String token = userService.addUser(request);
-        assertNotNull(token);
+        assertEquals(1, userService.addUser(request));
         // Additional assertions can be added here to check the user object's properties and token validity
     }
 }
