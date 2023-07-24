@@ -2,7 +2,7 @@ package groupone.userservice.security;
 
 import groupone.userservice.exception.NoTokenException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -12,6 +12,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 //The jwt filter that we want to add to the chain of filters of Spring Security
@@ -42,11 +43,8 @@ public class JwtFilter extends OncePerRequestFilter {
             if (authUserDetailOptional.isPresent()) {
 
                 AuthUserDetail authUserDetail = authUserDetailOptional.get();
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        authUserDetail.getUsername(),
-                        token,
-                        authUserDetail.getAuthorities()
-                ); // generate authentication object
+                LoginUserAuthentication authentication = new LoginUserAuthentication(
+                        authUserDetail.getUserId(), (List<GrantedAuthority>) authUserDetail.getAuthorities(), true, authUserDetail.getEmail());
 
                 SecurityContextHolder.getContext().setAuthentication(authentication); // put authentication object in the secruitycontext
             }
