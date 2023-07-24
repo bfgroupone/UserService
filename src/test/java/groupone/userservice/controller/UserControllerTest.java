@@ -27,7 +27,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -164,7 +166,9 @@ public class UserControllerTest{
 
         User modifiedUser = user1;
         modifiedUser.setActive(active);
+
         Mockito.when(userService.updateUserActive(anyInt(), any(List.class))).thenReturn(modifiedUser);
+
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/active"))
                 .andExpect(status().isOk())
@@ -179,9 +183,11 @@ public class UserControllerTest{
 
         User modifiedUser = user1;
         modifiedUser.setType(userType);
+
         Mockito.when(userService.updateUserType(anyInt(), anyInt(), any(List.class))).thenReturn(modifiedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/" + userType))
+
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
 //                .andExpect(jsonPath("$.data.userType").value(userType))
