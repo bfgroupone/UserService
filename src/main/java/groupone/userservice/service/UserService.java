@@ -202,7 +202,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public User updateUserActive(int uid, List<String> authorities) throws InvalidTypeAuthorization {
-        User user = getUserById(uid);
+        User user = userDao.getUserById(uid);
 
         int origType = user.getType();
 

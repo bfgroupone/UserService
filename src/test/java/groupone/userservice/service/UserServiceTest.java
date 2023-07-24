@@ -5,6 +5,7 @@ import groupone.userservice.dto.request.RegisterRequest;
 import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
+import groupone.userservice.exception.InvalidTypeAuthorization;
 import org.apache.http.auth.InvalidCredentialsException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,10 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,7 +70,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testLoadUserByUsername_UserNotFound() {
+    public void test_loadUserByUsername_UserNotFound() {
         String email = "notfound@example.com";
         Mockito.when(userDao.loadUserByEmail(email)).thenReturn(Optional.empty());
 
@@ -80,7 +78,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testLoadUserByUsername() {
+    public void test_loadUserByUsername() {
         String email = "johndoe@example.com";
         User user = user1;
         user.setEmail(email);
@@ -95,7 +93,7 @@ public class UserServiceTest {
         assertTrue(userDetails.isEnabled());
     }
     @Test
-    public void testGetAuthoritiesFromUser_NormalUser() {
+    public void test_getAuthoritiesFromUser_NormalUser() {
         User user = new User();
         user.setType(UserType.NORMAL_USER.ordinal());
 
@@ -108,7 +106,7 @@ public class UserServiceTest {
         assertTrue(authorities.contains(new SimpleGrantedAuthority("update")));
     }
     @Test
-    public void testGetAuthoritiesFromUser_NormalUserNotValid() {
+    public void test_getAuthoritiesFromUser_NormalUserNotValid() {
         User user = new User();
         user.setType(UserType.NORMAL_USER_NOT_VALID.ordinal());
 
@@ -122,7 +120,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testGetAuthoritiesFromUser_Admin() {
+    public void test_getAuthoritiesFromUser_Admin() {
         User user = new User();
         user.setType(UserType.ADMIN.ordinal());
 
@@ -138,7 +136,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testGetAuthoritiesFromUser_SuperAdmin() {
+    public void test_getAuthoritiesFromUser_SuperAdmin() {
         User user = new User();
         user.setType(UserType.SUPER_ADMIN.ordinal());
 
@@ -196,7 +194,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testUpdateUserProfile_Success() {
+    public void test_updateUserProfile_Success() {
         int userId = 1;
         UserPatchRequest request = new UserPatchRequest();
         request.setFirstName("John");
@@ -215,6 +213,53 @@ public class UserServiceTest {
         assertEquals(request.getEmail(), updatedUser.getEmail());
         assertEquals(request.getPassword(), updatedUser.getPassword());
         assertEquals(request.getProfileImageURL(), updatedUser.getProfileImageURL());
-        // Additional assertions based on the specific behavior of updateUserProfile
+    }
+
+    @Test
+    public void testUpdateUserType_NormalUserPromote_Success() throws InvalidTypeAuthorization {
+        int userId = 1;
+        int newType = UserType.ADMIN.ordinal();
+        List<String> authorities = new ArrayList<>();
+        authorities.add("promote");
+
+        User existingUser = user1;
+        existingUser.setType(UserType.NORMAL_USER.ordinal());
+
+        Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
+
+        User updatedUser = userService.updateUserType(userId, newType, authorities);
+
+        assertEquals(newType, updatedUser.getType());
+    }
+
+    @Test
+    public void testUpdateUserType_NormalUserPromote_NoPromoteAuthority() throws InvalidTypeAuthorization {
+        int userId = 1;
+        int newType = UserType.ADMIN.ordinal();
+        List<String> authorities = new ArrayList<>(); // No "promote" authority
+
+        User existingUser = user1;
+        existingUser.setType(UserType.NORMAL_USER.ordinal());
+
+        Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
+
+        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserType(userId, newType, authorities));
+    }
+
+    @Test
+    public void test_updateUserActive_Success() throws InvalidTypeAuthorization {
+        // Create a user with UserType.NORMAL_USER
+        User user = user1;
+        user.setType(UserType.NORMAL_USER.ordinal());
+        user.setActive(true);
+
+        // Set up the userDao mock
+        Mockito.when(userDao.getUserById(1)).thenReturn(user);
+
+        // Call the updateUserActive method
+        User updatedUser = userService.updateUserActive(1, Collections.singletonList("ban_unban"));
+
+        // Assert that the user's active status is toggled (from true to false or vice versa)
+        assertNotEquals(user.isActive(), updatedUser.isActive());
     }
 }
