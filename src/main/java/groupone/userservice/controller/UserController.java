@@ -40,6 +40,7 @@ public class UserController {
     private UserService userService;
     private AuthenticationManager authenticationManager;
 
+
     private JwtProvider jwtProvider;
     private RabbitTemplate rabbitTemplate;
     @Value("${email.validation.token.key}")
@@ -141,7 +142,6 @@ public class UserController {
 
     @PatchMapping("/users/{id}")
     public ResponseEntity<DataResponse> modifiedUserProfile(@RequestBody UserPatchRequest request, @PathVariable int id) {
-
         Optional<User> possibleDuplicationEmail = userService.getAllUsers().stream().filter(user -> user.getEmail().equals(request.getEmail())).findAny();
         User user = userService.getUserById(id);
         if (possibleDuplicationEmail.isPresent() && user.getEmail() != possibleDuplicationEmail.get().getEmail()) {
@@ -149,9 +149,7 @@ public class UserController {
                     DataResponse.builder()
                             .success(false)
                             .message("This email has already registered, please go to login.")
-                            .build(), HttpStatus.OK);
-        }
-
+                            .build(), HttpStatus.OK);}
         User data = userService.updateUserProfile(request, id);
         if (!request.getEmail().equals("")) {
             String token = createValidationEmailToken(id);
@@ -160,14 +158,9 @@ public class UserController {
                     .subject("Please click the link to validate your account")
                     .msgBody("http://localhost:8082/user-service/validate?token=" + token)
                     .build();
-
             String jsonMessage = SerializeUtil.serialize(registrationRequest);
-
             rabbitTemplate.convertAndSend("x.user-registration", "send-email", jsonMessage);
-
-            System.out.println("send....");
-        }
-
+            System.out.println("send....");}
         DataResponse res = DataResponse.builder()
                 .success(true)
                 .data(data)
@@ -191,7 +184,7 @@ public class UserController {
                     .message(e.getMessage())
                     .success(false)
                     .build();
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.ok(res);
         }
         DataResponse res = DataResponse.builder()
                 .success(true)
@@ -216,9 +209,10 @@ public class UserController {
                     .message(e.getMessage())
                     .success(false)
                     .build();
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.ok(res);
         }
         DataResponse res = DataResponse.builder()
+                .success(true)
                 .data(data)
                 .build();
         return ResponseEntity.ok(res);
@@ -236,7 +230,7 @@ public class UserController {
                         .success(false)
                         .message("User not found")
                         .build();
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+                return ResponseEntity.ok(response);
             }
 
             return ResponseEntity.ok(DataResponse.builder()

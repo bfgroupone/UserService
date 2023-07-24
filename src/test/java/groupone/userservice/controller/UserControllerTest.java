@@ -8,8 +8,10 @@ import groupone.userservice.dto.request.RegisterRequest;
 import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.dto.response.DataResponse;
 import groupone.userservice.entity.User;
+import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
 import groupone.userservice.security.JwtProvider;
+import groupone.userservice.security.LoginUserAuthentication;
 import groupone.userservice.service.UserService;
 
 import org.apache.http.auth.AuthenticationException;
@@ -26,13 +28,20 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
+import org.springframework.mock.web.MockCookie;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
@@ -43,6 +52,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -83,6 +94,12 @@ public class UserControllerTest{
 
     @MockBean
     private AuthUserDetail authUserDetail;
+//
+//    @MockBean
+//    private UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken;
+//
+//    @MockBean
+//    private SecurityContextHolder securityContextHolder;
 
     public UserControllerTest() throws ParseException {
     }
@@ -262,27 +279,80 @@ public class UserControllerTest{
                         .content(new Gson().toJson(userPatchRequest)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-//                .andExpect(jsonPath("$.data.firstName").value(modifiedUser.getFirstName()))
-//                .andExpect(jsonPath("$.data.lastName").value(modifiedUser.getLastName()))
-//                .andExpect(jsonPath("$.data.email").value(modifiedUser.getEmail()))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.firstName").value(modifiedUser.getFirstName()))
+                .andExpect(jsonPath("$.data.lastName").value(modifiedUser.getLastName()))
+                .andExpect(jsonPath("$.data.email").value(modifiedUser.getEmail()))
                 .andDo(MockMvcResultHandlers.print());
     }
+    @Test
+    public void test_modifiedUserProfile_SameEmailExistForOtherUser() throws Exception {
+        int userId = 4;
+        UserPatchRequest userPatchRequest = new UserPatchRequest("update@email.com", "UpdatedFirstName", "UpdatedLastName", "123", "url");
+        List<User> users = new ArrayList<>();
+        users.add(user2);
+        User modifiedUser = new User();
+        modifiedUser.setEmail(userPatchRequest.getEmail());
+        modifiedUser.setFirstName(userPatchRequest.getFirstName());
+        modifiedUser.setLastName(userPatchRequest.getLastName());
+        modifiedUser.setPassword(userPatchRequest.getPassword());
+        modifiedUser.setProfileImageURL(userPatchRequest.getProfileImageURL());
+        users.add(modifiedUser);
+        Mockito.when(userService.getUserById(userId)).thenReturn(user1);
+        Mockito.when(userService.getAllUsers()).thenReturn(users);
 
+        mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new Gson().toJson(userPatchRequest)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(false))
+                .andDo(MockMvcResultHandlers.print());
+    }
     @Test
     public void test_modifiedUserActive() throws Exception {
         int userId = 5;
-        boolean active = false;
-
+        boolean active = user1.isActive();
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        UsernamePasswordAuthenticationToken auth = mock(UsernamePasswordAuthenticationToken.class);
         User modifiedUser = user1;
-        modifiedUser.setActive(active);
-
+        modifiedUser.setActive(!active);
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("read"));
+        Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(securityContext);
+        Mockito.when(auth.getAuthorities()).thenReturn(authorities);
         Mockito.when(userService.updateUserActive(anyInt(), any(List.class))).thenReturn(modifiedUser);
 
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/active"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-//                .andExpect(jsonPath("$.data.userType").value(userType))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.active").value(!active))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    public void test_modifiedUserActive_InvalidType() throws Exception {
+        int userId = 5;
+        boolean active = false;
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        UsernamePasswordAuthenticationToken auth = mock(UsernamePasswordAuthenticationToken.class);
+        User modifiedUser = user1;
+        modifiedUser.setActive(active);
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("read"));
+        Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(securityContext);
+        Mockito.when(auth.getAuthorities()).thenReturn(authorities);
+        Mockito.when(userService.updateUserActive(anyInt(), any(List.class))).thenThrow(InvalidTypeAuthorization.class);
+
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/active"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(false))
                 .andDo(MockMvcResultHandlers.print());
     }
     @Test
@@ -290,34 +360,119 @@ public class UserControllerTest{
         int userId = 5;
         int userType = 1;
 
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        UsernamePasswordAuthenticationToken auth = mock(UsernamePasswordAuthenticationToken.class);
+
         User modifiedUser = user1;
         modifiedUser.setType(userType);
-
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("read"));
+        Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(securityContext);
+        Mockito.when(auth.getAuthorities()).thenReturn(authorities);
         Mockito.when(userService.updateUserType(anyInt(), anyInt(), any(List.class))).thenReturn(modifiedUser);
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/" + userType))
 
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-//                .andExpect(jsonPath("$.data.userType").value(userType))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.type").value(userType))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    public void test_modifiedUserType_InvalidType() throws Exception {
+        int userId = 5;
+        int userType = 1;
+
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        UsernamePasswordAuthenticationToken auth = mock(UsernamePasswordAuthenticationToken.class);
+        User modifiedUser = user1;
+        modifiedUser.setType(userType);
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("read"));
+        Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(securityContext);
+        Mockito.when(auth.getAuthorities()).thenReturn(authorities);
+        Mockito.when(userService.updateUserType(anyInt(), anyInt(), any(List.class))).thenThrow(InvalidTypeAuthorization.class);
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/" + userType))
+
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(false))
                 .andDo(MockMvcResultHandlers.print());
     }
     @Test
     public void test_getUserById() throws Exception {
         int userId = 1;
         User user = user1;
+
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("admin_read"));
+
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        LoginUserAuthentication auth = new LoginUserAuthentication(userId, authorities, true, user.getEmail());
+        Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(securityContext);
+//        Mockito.when(auth.getAuthorities()).thenReturn();
+
+
         Mockito.when(userService.getUserById(userId)).thenReturn(user);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/user")
                         .param("userId", String.valueOf(userId)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-//                .andExpect(jsonPath("$.data.firstName").value(user.getFirstName()))
-//                .andExpect(jsonPath("$.data.lastName").value(user.getLastName()))
-//                .andExpect(jsonPath("$.data.email").value(user.getEmail()))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.firstName").value(user.getFirstName()))
+                .andExpect(jsonPath("$.data.lastName").value(user.getLastName()))
+                .andExpect(jsonPath("$.data.email").value(user.getEmail()))
                 .andDo(MockMvcResultHandlers.print());
     }
+    @Test
+    public void test_getUserById_InvalidCredential() throws Exception {
+        int userId = 1;
+        User user = user1;
 
+        List<GrantedAuthority> authorities = new ArrayList<>();
+
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        LoginUserAuthentication auth = new LoginUserAuthentication(2, authorities, true, user.getEmail());
+        Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(securityContext);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/user")
+                        .param("userId", String.valueOf(userId)))
+//                .andExpect(status().isNotFound())
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof InvalidCredentialsException))
+                .andExpect(result -> assertEquals("No permission to check other users' profile", result.getResolvedException().getMessage()))
+                .andDo(MockMvcResultHandlers.print());
+    }
+    @Test
+    public void test_getUserById_NullUser() throws Exception {
+        int userId = 1;
+        User user = user1;
+
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("admin_read"));
+
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        LoginUserAuthentication auth = new LoginUserAuthentication(userId, authorities, true, user.getEmail());
+        Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(securityContext);
+//        Mockito.when(auth.getAuthorities()).thenReturn();
+
+        Mockito.when(userService.getUserById(userId)).thenReturn(null);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/user")
+                        .param("userId", String.valueOf(userId)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(false))
+                .andDo(MockMvcResultHandlers.print());
+    }
 //    @Test
 //    public void test_deleteUser() throws Exception {
 //        int userId = 5;
@@ -336,11 +491,21 @@ public class UserControllerTest{
 
     @Test
     public void test_logout() throws Exception {
+//        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("random", "stuff");
+//        request.setSession(session);
+        MockCookie cookie = new MockCookie("random", "stuff");
+//        request.setCookies(cookie);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/logout").header("authorization", "Bearer " + token))
+        mockMvc.perform(MockMvcRequestBuilders.post("/logout").with(request -> {
+            request.setSession(session);
+            request.setCookies(cookie);
+            return request;
+                }))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-//                .andExpect(jsonPath("$.message").value("Successfully logout!"))
+                .andExpect(jsonPath("$.message").value("Successfully logout!"))
                 .andDo(MockMvcResultHandlers.print());
     }
 
@@ -365,7 +530,26 @@ public class UserControllerTest{
                 .andExpect(jsonPath("$.data").value(validationToken))
                 .andDo(MockMvcResultHandlers.print());
     }
+    @Test
+    public void test_createEmailToken_NoToken() throws Exception {
+        CreateValidationEmailRequest request = new CreateValidationEmailRequest();
+        request.setUserId(user1.getId());
+        User user = user1;
 
+        String validationToken = "tokendummy";
+        user.setValidationToken("");
+        Mockito.when(userService.getUserById(anyInt())).thenReturn(user);
+        Mockito.when(userService.createValidationToken(any(User.class),  any(String.class))).thenReturn(validationToken);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new Gson().toJson(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("New validation email sent"))
+                .andExpect(jsonPath("$.data").value(validationToken))
+                .andDo(MockMvcResultHandlers.print());
+    }
     @Test
     public void test_validateEmailToken() throws Exception {
         String token = "mockToken";
