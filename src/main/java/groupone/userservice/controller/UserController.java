@@ -208,14 +208,29 @@ public class UserController {
     }
 
     @GetMapping("/user")
-    public ResponseEntity<DataResponse> getUserById(@RequestParam("userId") Integer userId) {
-        User user = userService.getUserById(userId);
-        if (user == null) {
-            DataResponse response = DataResponse.builder()
-                    .success(false)
-                    .message("User not found")
-                    .build();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+
+    public ResponseEntity<DataResponse> getUserById(@RequestParam("userId") Integer userId) throws InvalidCredentialsException {
+        LoginUserAuthentication auth = (LoginUserAuthentication) SecurityContextHolder.getContext().getAuthentication();
+        List<GrantedAuthority> authorities = (List<GrantedAuthority>) auth.getAuthorities();
+
+        if (auth.getUserID() == userId || authorities.toString().contains("admin_read")) {
+            User user = userService.getUserById(userId);
+            if (user == null) {
+                DataResponse response = DataResponse.builder()
+                        .success(false)
+                        .message("User not found")
+                        .build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+            return ResponseEntity.ok(DataResponse.builder()
+                    .success(true)
+                    .message("Get user by id Success")
+                    .data(user)
+                    .build());
+        } else {
+            throw new InvalidCredentialsException("No permission to check other users' profile");
+
         }
         return ResponseEntity.ok(DataResponse.builder()
                 .success(true)
