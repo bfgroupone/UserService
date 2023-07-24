@@ -49,10 +49,10 @@ public class UserService implements UserDetailsService {
         return users;
     }
 
-    @Transactional
-    public void deleteUser(User user) {
-        userDao.deleteUser(user);
-    }
+//    @Transactional
+//    public void deleteUser(User user) {
+//        userDao.deleteUser(user);
+//    }
 
     public User getUserById(Integer userId) {
         User user = userDao.getUserById(userId);
@@ -86,7 +86,7 @@ public class UserService implements UserDetailsService {
                 .build();
     }
 
-    private List<GrantedAuthority> getAuthoritiesFromUser(User user) {
+    public List<GrantedAuthority> getAuthoritiesFromUser(User user) {
         List<GrantedAuthority> userAuthorities = new ArrayList<>();
 
         if (user.getType() == UserType.SUPER_ADMIN.ordinal()) {
@@ -121,7 +121,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public String addUser(RegisterRequest request) throws InvalidCredentialsException {
+    public int addUser(RegisterRequest request) throws InvalidCredentialsException {
         if (existsByEmail(request.getEmail())) {
             throw new InvalidCredentialsException("Email already exists.");
         }
@@ -143,10 +143,10 @@ public class UserService implements UserDetailsService {
         }
 
         int userId = userDao.addUser(user);
-        String token = createValidationToken(userId);
-        user.setValidationToken(token);
+//        String token = createValidationToken(userId);
+//        user.setValidationToken(token);
 
-        return token;
+        return userId;
     }
 
     @Transactional
