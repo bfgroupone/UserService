@@ -91,6 +91,7 @@ public class UserService implements UserDetailsService {
             List<String> auths = new ArrayList<String>();
             userAuthorities.add(new SimpleGrantedAuthority("read"));
             userAuthorities.add(new SimpleGrantedAuthority("admin_read"));
+            userAuthorities.add(new SimpleGrantedAuthority("write"));
             userAuthorities.add(new SimpleGrantedAuthority("delete"));
             userAuthorities.add(new SimpleGrantedAuthority("ban_unban"));
             userAuthorities.add(new SimpleGrantedAuthority("recover"));
@@ -98,6 +99,7 @@ public class UserService implements UserDetailsService {
         } else if (user.getType() == UserType.ADMIN.ordinal()) {
             userAuthorities.add(new SimpleGrantedAuthority("read"));
             userAuthorities.add(new SimpleGrantedAuthority("admin_read"));
+            userAuthorities.add(new SimpleGrantedAuthority("write"));
             userAuthorities.add(new SimpleGrantedAuthority("delete"));
             userAuthorities.add(new SimpleGrantedAuthority("ban_unban"));
             userAuthorities.add(new SimpleGrantedAuthority("recover"));
