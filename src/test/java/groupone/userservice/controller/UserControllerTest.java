@@ -7,6 +7,7 @@ import groupone.userservice.dto.request.LoginRequest;
 import groupone.userservice.dto.request.RegisterRequest;
 import groupone.userservice.dto.request.UserPatchRequest;
 import groupone.userservice.dto.response.DataResponse;
+import groupone.userservice.dto.user.UserGeneralDTO;
 import groupone.userservice.entity.User;
 import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
@@ -431,6 +432,26 @@ public class UserControllerTest{
                 .andExpect(jsonPath("$.data.email").value(user.getEmail()))
                 .andDo(MockMvcResultHandlers.print());
     }
+
+    @Test
+    public void test_getUserByIdGeneral() throws Exception {
+        int userId = 1;
+        UserGeneralDTO dto = new UserGeneralDTO();
+        dto.setProfileImageURL(user1.getProfileImageURL());
+        dto.setFirstName(user1.getFirstName());
+        dto.setLastName(user1.getLastName());
+        Mockito.when(userService.getUserGeneralInfo(userId)).thenReturn(dto);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/user/" + userId + "/general"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.firstName").value(dto.getFirstName()))
+                .andExpect(jsonPath("$.data.lastName").value(dto.getLastName()))
+                .andExpect(jsonPath("$.data.profileImageURL").value(dto.getProfileImageURL()))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
     @Test
     public void test_getUserById_InvalidCredential() throws Exception {
         int userId = 1;
