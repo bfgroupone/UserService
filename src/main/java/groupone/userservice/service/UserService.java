@@ -177,7 +177,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public User promoteUser(int uid) throws InvalidTypeAuthorization {
-        User user = getUserById(uid);
+        User user = userDao.getUserById(uid);
 
         int origType = user.getType();
 
@@ -192,7 +192,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public User updateUserActive(int uid) throws InvalidTypeAuthorization {
-        User user = getUserById(uid);
+        User user = userDao.getUserById(uid);
 
         int origType = user.getType();
 
