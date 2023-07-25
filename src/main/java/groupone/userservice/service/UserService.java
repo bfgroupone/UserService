@@ -170,7 +170,6 @@ public class UserService implements UserDetailsService {
 
         if (!request.getProfileImageURL().isEmpty()) {
             user.setProfileImageURL(request.getProfileImageURL());
-            // TODO: upload profile image to S3
         }
 
         return user;
