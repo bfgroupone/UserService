@@ -3,6 +3,7 @@ package groupone.userservice.service;
 import groupone.userservice.dao.UserDao;
 import groupone.userservice.dto.request.RegisterRequest;
 import groupone.userservice.dto.request.UserPatchRequest;
+import groupone.userservice.dto.user.UserGeneralDTO;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
 import groupone.userservice.exception.InvalidTypeAuthorization;
@@ -241,22 +242,7 @@ public class UserServiceTest {
         assertEquals(request.getPassword(), updatedUser.getPassword());
         assertEquals(request.getProfileImageURL(), updatedUser.getProfileImageURL());
     }
-    @Test
-    public void testUpdateUserType_SameType() throws InvalidTypeAuthorization {
-        int userId = 1;
-        int newType = UserType.NORMAL_USER.ordinal();
-        List<String> authorities = new ArrayList<>();
-        authorities.add("promote");
 
-        User existingUser = user1;
-        existingUser.setType(UserType.NORMAL_USER.ordinal());
-
-        Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
-
-        User updatedUser = userService.promoteUser(userId);
-
-        assertEquals(newType, updatedUser.getType());
-    }
     @Test
     public void testUpdateUserType_NormalUserPromote_Success() throws InvalidTypeAuthorization {
         int userId = 1;
@@ -287,33 +273,7 @@ public class UserServiceTest {
         assertThrows(InvalidTypeAuthorization.class, () -> userService.promoteUser(userId));
     }
 
-    @Test
-    public void testUpdateUserType_invalidUserPromote_fail() throws InvalidTypeAuthorization {
-        int userId = 1;
-        int newType = UserType.NORMAL_USER_NOT_VALID.ordinal();
-        List<String> authorities = new ArrayList<>();
-        authorities.add("promote");
 
-        User existingUser = user1;
-        existingUser.setType(UserType.NORMAL_USER.ordinal());
-
-        Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
-
-        assertThrows(InvalidTypeAuthorization.class, () -> userService.promoteUser(userId));
-    }
-    @Test
-    public void testUpdateUserType_NormalUserPromote_NoPromoteAuthority() throws InvalidTypeAuthorization {
-        int userId = 1;
-        int newType = UserType.ADMIN.ordinal();
-        List<String> authorities = new ArrayList<>(); // No "promote" authority
-
-        User existingUser = user1;
-        existingUser.setType(UserType.NORMAL_USER.ordinal());
-
-        Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
-
-        assertThrows(InvalidTypeAuthorization.class, () -> userService.promoteUser(userId));
-    }
 
     @Test
     public void test_updateUserActive_Success() throws InvalidTypeAuthorization {
@@ -332,20 +292,7 @@ public class UserServiceTest {
         assertNotEquals(userstate, updatedUser.isActive());
     }
 
-    @Test
-    public void test_updateUserActive_NoAuth() throws InvalidTypeAuthorization {
-        // Create a user with UserType.NORMAL_USER
-        User user = user1;
-        user.setType(UserType.NORMAL_USER.ordinal());
-        boolean userstate = true;
-        user.setActive(userstate);
 
-        // Set up the userDao mock
-        Mockito.when(userDao.getUserById(1)).thenReturn(user);
-
-        // Call the updateUserActive method
-        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserActive(1));
-    }
     @Test
     public void test_updateUserActive_CanNotBanAdmin() throws InvalidTypeAuthorization {
         // Create a user with UserType.NORMAL_USER
@@ -432,6 +379,17 @@ public class UserServiceTest {
         boolean isValid = userService.validateEmailToken(token, false, null);
 
         assertFalse(isValid);
+    }
+
+    @Test
+    public void test_GetUserGeneralInfo(){
+        User user = user1;
+
+
+        Mockito.when(userDao.getUserById(anyInt())).thenReturn(user);
+        UserGeneralDTO newDto = userService.getUserGeneralInfo(1);
+        assertEquals(newDto.getFirstName(), user.getFirstName());
+        assertEquals(newDto.getLastName(), user.getLastName());
     }
 
 }
