@@ -2,6 +2,7 @@ package groupone.userservice.controller;
 
 import groupone.userservice.dto.request.*;
 import groupone.userservice.dto.response.DataResponse;
+import groupone.userservice.dto.user.UserGeneralDTO;
 import groupone.userservice.entity.User;
 import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
@@ -232,6 +233,15 @@ public class UserController {
             throw new InvalidCredentialsException("No permission to check other users' profile");
         }
     }
+
+    @GetMapping("/user/{id}/general")
+    public ResponseEntity<DataResponse> getUserByIdGeneral(@PathVariable int id) {
+        return new ResponseEntity<>(DataResponse.builder().data(userService.getUserGeneralInfo(id))
+                .success(true)
+                .message("Successfully get user general info")
+                .build(), HttpStatus.OK);
+    }
+
 //    @DeleteMapping("/user")
 //    public ResponseEntity<DataResponse> deleteUser(@RequestParam("userId") Integer userId) {
 //        User existingUser = userService.getUserById(userId);
