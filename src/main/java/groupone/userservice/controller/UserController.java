@@ -178,7 +178,7 @@ public class UserController {
                     .message(e.getMessage())
                     .success(false)
                     .build();
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.ok(res);
         }
         DataResponse res = DataResponse.builder()
                 .success(true)
@@ -198,7 +198,7 @@ public class UserController {
                     .message(e.getMessage())
                     .success(false)
                     .build();
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.ok(res);
         }
         DataResponse res = DataResponse.builder()
                 .success(true)
@@ -220,7 +220,7 @@ public class UserController {
                         .success(false)
                         .message("User not found")
                         .build();
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+                return ResponseEntity.ok(response);
             }
 
             return ResponseEntity.ok(DataResponse.builder()

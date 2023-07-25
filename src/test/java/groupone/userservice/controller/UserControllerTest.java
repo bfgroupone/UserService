@@ -322,7 +322,7 @@ public class UserControllerTest{
         Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(securityContext);
         Mockito.when(auth.getAuthorities()).thenReturn(authorities);
-        Mockito.when(userService.updateUserActive(anyInt(), any(List.class))).thenReturn(modifiedUser);
+        Mockito.when(userService.updateUserActive(anyInt())).thenReturn(modifiedUser);
 
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/active"))
@@ -334,7 +334,7 @@ public class UserControllerTest{
     }
 
     @Test
-    public void test_modifiedUserActive_InvalidType() throws Exception {
+    public void test_UpdateUserActive_InvalidType() throws Exception {
         int userId = 5;
         boolean active = false;
         SecurityContext securityContext = Mockito.mock(SecurityContext.class);
@@ -346,7 +346,7 @@ public class UserControllerTest{
         Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(securityContext);
         Mockito.when(auth.getAuthorities()).thenReturn(authorities);
-        Mockito.when(userService.updateUserActive(anyInt(), any(List.class))).thenThrow(InvalidTypeAuthorization.class);
+        Mockito.when(userService.updateUserActive(anyInt())).thenThrow(InvalidTypeAuthorization.class);
 
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/active"))
@@ -356,7 +356,7 @@ public class UserControllerTest{
                 .andDo(MockMvcResultHandlers.print());
     }
     @Test
-    public void test_modifiedUserType() throws Exception {
+    public void test_PromoteUser() throws Exception {
         int userId = 5;
         int userType = 1;
 
@@ -370,9 +370,9 @@ public class UserControllerTest{
         Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(securityContext);
         Mockito.when(auth.getAuthorities()).thenReturn(authorities);
-        Mockito.when(userService.updateUserType(anyInt(), anyInt(), any(List.class))).thenReturn(modifiedUser);
+        Mockito.when(userService.promoteUser(anyInt())).thenReturn(modifiedUser);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/" + userType))
+        mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/" + "promote"))
 
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -382,7 +382,7 @@ public class UserControllerTest{
     }
 
     @Test
-    public void test_modifiedUserType_InvalidType() throws Exception {
+    public void test_PromoteUser_InvalidType() throws Exception {
         int userId = 5;
         int userType = 1;
 
@@ -395,9 +395,9 @@ public class UserControllerTest{
         Mockito.when(securityContext.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(securityContext);
         Mockito.when(auth.getAuthorities()).thenReturn(authorities);
-        Mockito.when(userService.updateUserType(anyInt(), anyInt(), any(List.class))).thenThrow(InvalidTypeAuthorization.class);
+        Mockito.when(userService.promoteUser(anyInt())).thenThrow(InvalidTypeAuthorization.class);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/" + userType))
+        mockMvc.perform(MockMvcRequestBuilders.patch("/users/" + userId + "/promote"))
 
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))

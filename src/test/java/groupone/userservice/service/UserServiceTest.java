@@ -253,7 +253,7 @@ public class UserServiceTest {
 
         Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
 
-        User updatedUser = userService.updateUserType(userId, newType, authorities);
+        User updatedUser = userService.promoteUser(userId);
 
         assertEquals(newType, updatedUser.getType());
     }
@@ -269,14 +269,13 @@ public class UserServiceTest {
 
         Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
 
-        User updatedUser = userService.updateUserType(userId, newType, authorities);
+        User updatedUser = userService.promoteUser(userId);
 
         assertEquals(newType, updatedUser.getType());
     }
     @Test
     public void testUpdateUserType_SuperAdminPromote_Fail() throws InvalidTypeAuthorization {
         int userId = 1;
-        int newType = UserType.ADMIN.ordinal();
         List<String> authorities = new ArrayList<>();
         authorities.add("promote");
 
@@ -285,7 +284,7 @@ public class UserServiceTest {
 
         Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
 
-        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserType(userId, newType, authorities));
+        assertThrows(InvalidTypeAuthorization.class, () -> userService.promoteUser(userId));
     }
 
     @Test
@@ -300,7 +299,7 @@ public class UserServiceTest {
 
         Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
 
-        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserType(userId, newType, authorities));
+        assertThrows(InvalidTypeAuthorization.class, () -> userService.promoteUser(userId));
     }
     @Test
     public void testUpdateUserType_NormalUserPromote_NoPromoteAuthority() throws InvalidTypeAuthorization {
@@ -313,7 +312,7 @@ public class UserServiceTest {
 
         Mockito.when(userDao.getUserById(userId)).thenReturn(existingUser);
 
-        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserType(userId, newType, authorities));
+        assertThrows(InvalidTypeAuthorization.class, () -> userService.promoteUser(userId));
     }
 
     @Test
@@ -323,13 +322,11 @@ public class UserServiceTest {
         user.setType(UserType.NORMAL_USER.ordinal());
         boolean userstate = true;
         user.setActive(userstate);
-        List<String> authorities = new ArrayList<>();
-        authorities.add("ban_unban");
         // Set up the userDao mock
         Mockito.when(userDao.getUserById(1)).thenReturn(user);
 
         // Call the updateUserActive method
-        User updatedUser = userService.updateUserActive(1, authorities);
+        User updatedUser = userService.updateUserActive(1);
 
         // Assert that the user's active status is toggled (from true to false or vice versa)
         assertNotEquals(userstate, updatedUser.isActive());
@@ -342,12 +339,12 @@ public class UserServiceTest {
         user.setType(UserType.NORMAL_USER.ordinal());
         boolean userstate = true;
         user.setActive(userstate);
-        List<String> authorities = new ArrayList<>();
+
         // Set up the userDao mock
         Mockito.when(userDao.getUserById(1)).thenReturn(user);
 
         // Call the updateUserActive method
-        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserActive(1, authorities));
+        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserActive(1));
     }
     @Test
     public void test_updateUserActive_CanNotBanAdmin() throws InvalidTypeAuthorization {
@@ -356,13 +353,12 @@ public class UserServiceTest {
         user.setType(UserType.ADMIN.ordinal());
         boolean userstate = true;
         user.setActive(userstate);
-        List<String> authorities = new ArrayList<>();
-        authorities.add("ban_unban");
+
         // Set up the userDao mock
         Mockito.when(userDao.getUserById(1)).thenReturn(user);
 
         // Assert that the user's active status is toggled (from true to false or vice versa)
-        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserActive(1, authorities));
+        assertThrows(InvalidTypeAuthorization.class, () -> userService.updateUserActive(1));
     }
     @Test
     public void test_createValidationToken_Success() {
