@@ -12,8 +12,10 @@ import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
@@ -31,6 +33,7 @@ public class JwtProvider {
         for (GrantedAuthority c : userDetails.getAuthorities()) {
             authorities.add(c.getAuthority());
         }
+        Date expirationDate = new Date(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(3));
 
         claims.put("permissions", authorities);
         claims.put("userId", userDetails.getUserId());
@@ -40,6 +43,7 @@ public class JwtProvider {
 
         return Jwts.builder()
                 .setClaims(claims)
+                .setExpiration(expirationDate)
                 .signWith(SignatureAlgorithm.HS256, key)
                 .compact();
     }
