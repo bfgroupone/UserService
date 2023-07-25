@@ -150,7 +150,9 @@ public class UserService implements UserDetailsService {
     @Transactional
     public User updateUserProfile(UserPatchRequest request, int uid) {
         User user = userDao.getUserById(uid);
-
+        if (user == null) {
+            throw new UsernameNotFoundException("Cannot find user with uid: " + uid);
+        }
         if (!request.getFirstName().equals("")) {
             user.setFirstName(request.getFirstName());
         }
@@ -178,7 +180,9 @@ public class UserService implements UserDetailsService {
     @Transactional
     public User promoteUser(int uid) throws InvalidTypeAuthorization {
         User user = userDao.getUserById(uid);
-
+        if (user == null) {
+            throw new UsernameNotFoundException("Cannot find user with uid: " + uid);
+        }
         int origType = user.getType();
 
         if (origType != UserType.NORMAL_USER.ordinal()) {
@@ -193,7 +197,9 @@ public class UserService implements UserDetailsService {
     @Transactional
     public User updateUserActive(int uid) throws InvalidTypeAuthorization {
         User user = userDao.getUserById(uid);
-
+        if (user == null) {
+            throw new UsernameNotFoundException("Cannot find user with uid: " + uid);
+        }
         int origType = user.getType();
 
         if (origType == UserType.SUPER_ADMIN.ordinal() || origType == UserType.ADMIN.ordinal()) {
@@ -231,6 +237,7 @@ public class UserService implements UserDetailsService {
             }
             int userId = Integer.parseInt(claimsJws.getBody().getSubject());
             User user = userDao.getUserById(userId);
+
             user.setType(UserType.NORMAL_USER.ordinal());
             return true;
         } catch (Exception e) {
@@ -242,6 +249,9 @@ public class UserService implements UserDetailsService {
     @Transactional
     public UserGeneralDTO getUserGeneralInfo(int userId) {
         User user = this.userDao.getUserById(userId);
+        if (user == null) {
+            throw new UsernameNotFoundException("Cannot find user with uid: " + userId);
+        }
         return UserGeneralDTO.builder()
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
