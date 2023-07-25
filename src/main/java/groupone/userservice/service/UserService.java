@@ -3,6 +3,7 @@ package groupone.userservice.service;
 import groupone.userservice.dao.UserDao;
 import groupone.userservice.dto.request.RegisterRequest;
 import groupone.userservice.dto.request.UserPatchRequest;
+import groupone.userservice.dto.user.UserGeneralDTO;
 import groupone.userservice.entity.User;
 import groupone.userservice.entity.UserType;
 import groupone.userservice.exception.InvalidTypeAuthorization;
@@ -237,5 +238,14 @@ public class UserService implements UserDetailsService {
             System.out.println(e);
             return false;
         }
+    }
+
+    @Transactional
+    public UserGeneralDTO getUserGeneralInfo(int userId) {
+        User user = this.userDao.getUserById(userId);
+        return UserGeneralDTO.builder()
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .profileImageURL(user.getProfileImageURL()).build();
     }
 }
