@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -67,7 +68,7 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<DataResponse> login(@RequestBody LoginRequest request) throws BadCredentialsException {
+    public ResponseEntity<DataResponse> login(@Valid @RequestBody LoginRequest request) throws BadCredentialsException {
         Authentication authentication;
 
         try {
@@ -102,7 +103,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<DataResponse> register(@RequestBody RegisterRequest request) throws DataIntegrityViolationException, InvalidCredentialsException {
+    public ResponseEntity<DataResponse> register(@Valid @RequestBody RegisterRequest request) throws DataIntegrityViolationException, InvalidCredentialsException {
         try {
             int userId = userService.addUser(request);
             User user = userService.getUserById(userId);

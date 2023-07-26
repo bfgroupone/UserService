@@ -2,8 +2,10 @@ package groupone.userservice.entity;
 
 
 import lombok.*;
+import org.hibernate.validator.constraints.Length;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotEmpty;
 import java.util.Date;
 
 @Entity
@@ -21,15 +23,19 @@ public class User {
     private Integer id;
 
     @Column(nullable = false, unique = true)
+    @NotEmpty(message = "Please provide your email")
     private String email;
 
     @Column(nullable = false)
+    @NotEmpty(message = "Please provide your first name")
     private String firstName;
 
     @Column(nullable = false)
+    @NotEmpty(message = "Please provide your last name")
     private String lastName;
 
     @Column(nullable = false)
+    @NotEmpty(message = "Please provide your password")
     private String password;
 
     @Column(nullable = false)
