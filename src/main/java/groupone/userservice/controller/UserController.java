@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -236,12 +237,26 @@ public class UserController {
 
     @GetMapping("/user/{id}/general")
     public ResponseEntity<DataResponse> getUserByIdGeneral(@PathVariable int id) {
+        System.out.println("Getting User General Info for user " + id);
         return new ResponseEntity<>(DataResponse.builder().data(userService.getUserGeneralInfo(id))
                 .success(true)
                 .message("Successfully get user general info")
                 .build(), HttpStatus.OK);
     }
-
+    @GetMapping("/users/general")
+    public ResponseEntity<DataResponse> getUsersByIdsGeneral(@RequestBody GeneralInfoRequest request) {
+        System.out.println(request);
+        System.out.println(request.getUserIdList());
+        List<Integer> Ids = new ArrayList<>();
+        for(Long id: request.getUserIdList()){
+            Ids.add((int) ((long) id));
+        }
+//        System.out.println(Ids);
+        return new ResponseEntity<>(DataResponse.builder().data(userService.getUserGeneralInfos(Ids))
+                .success(true)
+                .message("Successfully get user general infos")
+                .build(), HttpStatus.OK);
+    }
 //    @DeleteMapping("/user")
 //    public ResponseEntity<DataResponse> deleteUser(@RequestParam("userId") Integer userId) {
 //        User existingUser = userService.getUserById(userId);

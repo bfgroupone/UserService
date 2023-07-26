@@ -259,4 +259,18 @@ public class UserService implements UserDetailsService {
                 .lastName(user.getLastName())
                 .profileImageURL(user.getProfileImageURL()).build();
     }
+
+    @Transactional
+    public List<UserGeneralDTO> getUserGeneralInfos(List<Integer> Ids) {
+        List<User> users = this.userDao.getUserGroupByIdList(Ids);
+        List<UserGeneralDTO> result = new ArrayList<>();
+        for(User user: users){
+            result.add(UserGeneralDTO.builder().userId(user.getId())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .profileImageURL(user.getProfileImageURL()).build());
+
+        }
+        return result;
+    }
 }

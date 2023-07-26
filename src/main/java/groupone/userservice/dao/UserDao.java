@@ -1,9 +1,9 @@
 package groupone.userservice.dao;
 
 import groupone.userservice.entity.User;
-import groupone.userservice.entity.UserType;
-import groupone.userservice.exception.InvalidTypeAuthorization;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
@@ -49,5 +49,13 @@ public class UserDao extends AbstractHibernateDao<User> {
 
     public void setValidationToken(User user, String token) {
         user.setValidationToken(token);
+    }
+
+    public List<User> getUserGroupByIdList(List<Integer> userIdList) {
+        Session session = this.getCurrentSession();
+        String hql = "FROM User Where userId IN (:userIdList)";
+        Query<User> query = session.createQuery(hql, User.class);
+        query.setParameterList("userIdList", userIdList);
+        return query.list();
     }
 }

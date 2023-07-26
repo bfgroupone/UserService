@@ -8,6 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserGeneralDTO {
+    private Integer userId;
     private String firstName;
     private String lastName;
     private String profileImageURL;
