@@ -454,11 +454,10 @@ public class UserControllerTest{
     @Test
     public void test_getUsersByIdsGeneral() throws Exception {
         GeneralInfoRequest request = new GeneralInfoRequest();
-        List<Long> requestIds = new ArrayList<>();
-//        requestIds.add((Long) 1);
         List<Integer> Ids = new ArrayList<>();
         Ids.add(1);
         Ids.add(2);
+        request.setUserIdList(Ids);
         List<UserGeneralDTO> dtos = new ArrayList<>();
         UserGeneralDTO dto = new UserGeneralDTO();
         dto.setUserId(1);
@@ -473,7 +472,7 @@ public class UserControllerTest{
 
         mockMvc.perform(MockMvcRequestBuilders.get("/users/general")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(new Gson().toJson()))
+                        .content(new Gson().toJson(request)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))

@@ -392,4 +392,17 @@ public class UserServiceTest {
         assertEquals(newDto.getLastName(), user.getLastName());
     }
 
+    @Test
+    public void test_GetUserGeneralInfos(){
+        List<Integer> ids = new ArrayList<>();
+        ids.add(1);
+        ids.add(2);
+        List<User> users = new ArrayList<>();
+        users.add(user1);
+        users.add(user2);
+        Mockito.when(userDao.getUserGroupByIdList(any(List.class))).thenReturn(users);
+        List<UserGeneralDTO> newDtos = userService.getUserGeneralInfos(ids);
+        assertNotNull(newDtos);
+    }
+
 }
