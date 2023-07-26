@@ -2,6 +2,7 @@ package groupone.userservice.security;
 
 import groupone.userservice.exception.NoTokenException;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,8 +62,12 @@ public class JwtProvider {
 
         String token = prefixedToken.substring(7); // remove the prefix "Bearer "
         System.out.printf("token %s\n", token);
-
-        Claims claims = Jwts.parser().setSigningKey(key).parseClaimsJws(token).getBody(); // decode
+        Claims claims;
+        try {
+            claims = Jwts.parser().setSigningKey(key).parseClaimsJws(token).getBody(); // decode
+        } catch (ExpiredJwtException e) {
+            throw new NoTokenException("Expired, login again");
+        }
 
         List<GrantedAuthority> authorities = ((List<String>) claims.get("permissions")).stream()
                 .map(SimpleGrantedAuthority::new).collect(Collectors.toList());

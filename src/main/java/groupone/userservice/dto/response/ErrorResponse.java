@@ -9,4 +9,6 @@ import lombok.*;
 @NoArgsConstructor
 public class ErrorResponse {
     private String message;
+    private Boolean success;
+    private Integer statusCode;
 }
