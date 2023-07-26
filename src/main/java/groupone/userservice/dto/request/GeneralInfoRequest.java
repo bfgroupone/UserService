@@ -8,5 +8,5 @@ import java.util.List;
 @Getter
 @Setter
 public class GeneralInfoRequest {
-    private List<Long> userIdList;
+    private List<Integer> userIdList;
 }

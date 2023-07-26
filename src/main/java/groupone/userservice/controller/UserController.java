@@ -245,14 +245,7 @@ public class UserController {
     }
     @GetMapping("/users/general")
     public ResponseEntity<DataResponse> getUsersByIdsGeneral(@RequestBody GeneralInfoRequest request) {
-        System.out.println(request);
-        System.out.println(request.getUserIdList());
-        List<Integer> Ids = new ArrayList<>();
-        for(Long id: request.getUserIdList()){
-            Ids.add((int) ((long) id));
-        }
-//        System.out.println(Ids);
-        return new ResponseEntity<>(DataResponse.builder().data(userService.getUserGeneralInfos(Ids))
+        return new ResponseEntity<>(DataResponse.builder().data(userService.getUserGeneralInfos(request.getUserIdList()))
                 .success(true)
                 .message("Successfully get user general infos")
                 .build(), HttpStatus.OK);

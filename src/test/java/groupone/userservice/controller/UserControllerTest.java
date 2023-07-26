@@ -2,10 +2,7 @@ package groupone.userservice.controller;
 
 
 import com.google.gson.Gson;
-import groupone.userservice.dto.request.CreateValidationEmailRequest;
-import groupone.userservice.dto.request.LoginRequest;
-import groupone.userservice.dto.request.RegisterRequest;
-import groupone.userservice.dto.request.UserPatchRequest;
+import groupone.userservice.dto.request.*;
 import groupone.userservice.dto.response.DataResponse;
 import groupone.userservice.dto.user.UserGeneralDTO;
 import groupone.userservice.entity.User;
@@ -46,6 +43,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -437,6 +435,7 @@ public class UserControllerTest{
     public void test_getUserByIdGeneral() throws Exception {
         int userId = 1;
         UserGeneralDTO dto = new UserGeneralDTO();
+        dto.setUserId(1);
         dto.setProfileImageURL(user1.getProfileImageURL());
         dto.setFirstName(user1.getFirstName());
         dto.setLastName(user1.getLastName());
@@ -449,6 +448,35 @@ public class UserControllerTest{
                 .andExpect(jsonPath("$.data.firstName").value(dto.getFirstName()))
                 .andExpect(jsonPath("$.data.lastName").value(dto.getLastName()))
                 .andExpect(jsonPath("$.data.profileImageURL").value(dto.getProfileImageURL()))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    public void test_getUsersByIdsGeneral() throws Exception {
+        GeneralInfoRequest request = new GeneralInfoRequest();
+        List<Long> requestIds = new ArrayList<>();
+//        requestIds.add((Long) 1);
+        List<Integer> Ids = new ArrayList<>();
+        Ids.add(1);
+        Ids.add(2);
+        List<UserGeneralDTO> dtos = new ArrayList<>();
+        UserGeneralDTO dto = new UserGeneralDTO();
+        dto.setUserId(1);
+        dto.setProfileImageURL(user1.getProfileImageURL());
+        dto.setFirstName(user1.getFirstName());
+        dto.setLastName(user1.getLastName());
+        dtos.add(dto);
+//        request.setUserIdList(Ids);
+        UserGeneralDTO dto2 = new UserGeneralDTO(2, user2.getFirstName(), user2.getLastName(), user2.getProfileImageURL());
+        dtos.add(dto2);
+        Mockito.when(userService.getUserGeneralInfos(Ids)).thenReturn(dtos);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/users/general")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new Gson().toJson()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(true))
                 .andDo(MockMvcResultHandlers.print());
     }
 
