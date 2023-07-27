@@ -2,7 +2,6 @@ package groupone.userservice.controller;
 
 import groupone.userservice.dto.request.*;
 import groupone.userservice.dto.response.DataResponse;
-import groupone.userservice.dto.user.UserGeneralDTO;
 import groupone.userservice.entity.User;
 import groupone.userservice.exception.InvalidTypeAuthorization;
 import groupone.userservice.security.AuthUserDetail;
@@ -30,7 +29,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -166,7 +164,7 @@ public class UserController {
         DataResponse res = DataResponse.builder()
                 .success(true)
                 .data(data)
-                .message("Successfully update user profile")
+                .message("Successfully update user profile, re-login to apply your information")
                 .build();
         return ResponseEntity.ok(res);
     }
@@ -278,6 +276,27 @@ public class UserController {
         return ResponseEntity.ok(DataResponse.builder()
                 .success(true)
                 .message("New validation email sent")
+                .data(token)
+                .build());
+    }
+
+    @PostMapping("/validate/send")
+    public ResponseEntity<DataResponse> sendValidationEmailToken(@RequestBody CreateValidationEmailRequest request, @RequestParam("email") String email) {
+        String token = createValidationEmailToken(request.getUserId());
+
+        UserRegistrationRequest registrationRequest = UserRegistrationRequest.builder()
+                .recipient(email)
+                .subject("Please click the link to validate your account")
+                .msgBody("http://localhost:8082/user-service/validate?token=" + token)
+                .build();
+
+        String jsonMessage = SerializeUtil.serialize(registrationRequest);
+        rabbitTemplate.convertAndSend("x.user-registration", "send-email", jsonMessage);
+        System.out.println("send....");
+
+        return ResponseEntity.ok(DataResponse.builder()
+                .success(true)
+                .message("New validation email sent, re-login to apply your information")
                 .data(token)
                 .build());
     }

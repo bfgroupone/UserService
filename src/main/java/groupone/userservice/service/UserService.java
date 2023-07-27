@@ -164,8 +164,10 @@ public class UserService implements UserDetailsService {
         }
 
         if (!request.getEmail().equals("")) {
-            user.setEmail(request.getEmail());
-            user.setType(UserType.NORMAL_USER_NOT_VALID.ordinal());
+            if (!user.getEmail().equals(request.getEmail())) {
+                user.setEmail(request.getEmail());
+                user.setType(UserType.NORMAL_USER_NOT_VALID.ordinal());
+            }
         }
 
         if (!request.getPassword().equals("")) {
