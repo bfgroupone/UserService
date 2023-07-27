@@ -578,6 +578,9 @@ public class UserControllerTest{
                 .andExpect(jsonPath("$.data").value(validationToken))
                 .andDo(MockMvcResultHandlers.print());
     }
+
+
+
     @Test
     public void test_createEmailToken_NoToken() throws Exception {
         CreateValidationEmailRequest request = new CreateValidationEmailRequest();
@@ -598,6 +601,28 @@ public class UserControllerTest{
                 .andExpect(jsonPath("$.data").value(validationToken))
                 .andDo(MockMvcResultHandlers.print());
     }
+
+    @Test
+    public void test_sendValidationEmail() throws Exception {
+        CreateValidationEmailRequest request = new CreateValidationEmailRequest();
+        String email = user1.getEmail();
+        request.setUserId(user1.getId());
+        User user = user1;
+
+        String validationToken = "tokendummy";
+        user.setValidationToken(validationToken);
+        Mockito.when(userService.getUserById(anyInt())).thenReturn(user);
+        Mockito.when(userService.validateEmailToken(validationToken, true, validationEmailKey)).thenReturn(true);
+        Mockito.when(userService.createValidationToken(any(User.class),  any(String.class))).thenReturn(validationToken);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/validate/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new Gson().toJson(request))
+                        .param("email", String.valueOf(email)))
+                .andExpect(status().isOk())
+                .andDo(MockMvcResultHandlers.print());
+    }
+
     @Test
     public void test_validateEmailToken() throws Exception {
         String token = "mockToken";
